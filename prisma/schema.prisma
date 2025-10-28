@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  books     Book[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Questionnaire {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  questions   Json     // Array of question objects with type, text, options, etc.
+  isPublished Boolean  @default(false)
+  books       Book[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("questionnaires")
+}
+
+model Book {
+  id              String        @id @default(cuid())
+  title           String
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
+  answers         Json          // User's questionnaire answers
+  content         Json          // Canvas editor state (Fabric.js JSON)
+  coverImage      String?
+  status          BookStatus    @default(DRAFT)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("books")
+}
+
+enum BookStatus {
+  DRAFT
+  PUBLISHED
+}
