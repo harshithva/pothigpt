@@ -10,10 +10,9 @@ import re
 
 # ── CONFIGURATION ────────────────────────────────────────────
 
-openai.api_key = os.getenv(
-    "OPENAI_API_KEY",
-    "os.getenv("OPENAI_API_KEY", "").strip()"
-).strip()
+openai.api_key = os.getenv("OPENAI_API_KEY", "").strip()
+if not openai.api_key:
+    raise RuntimeError("OPENAI_API_KEY environment variable not set.")
 if not openai.api_key:
     raise RuntimeError("OpenAI API key not set.")
 

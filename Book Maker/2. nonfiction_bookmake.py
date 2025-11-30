@@ -8,10 +8,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # ── CONFIGURATION ──────────────────────────────────────────────────────────────
 
-openai.api_key = os.getenv(
-    "OPENAI_API_KEY",
-    "os.getenv("OPENAI_API_KEY", "").strip()"
-).strip()
+openai.api_key = os.getenv("OPENAI_API_KEY", "").strip()
+if not openai.api_key:
+    raise RuntimeError("OPENAI_API_KEY environment variable not set.")
 
 MODEL = "gpt-4o-mini"
 PROMPTS_EXCEL = "/Users/kuldeepsharma/Desktop/projectcode/Book_Generated_Content.xlsx"

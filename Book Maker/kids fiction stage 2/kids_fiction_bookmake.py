@@ -8,8 +8,10 @@ from docx.oxml.ns import qn
 import os
 import re
 
-# Set your OpenAI API key
-openai.api_key = "os.getenv("OPENAI_API_KEY", "").strip()"
+# Set your OpenAI API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY", "").strip()
+if not openai.api_key:
+    raise RuntimeError("OPENAI_API_KEY environment variable not set.")
 
 # Input and Output Paths
 INPUT_PATH = "/Users/kuldeepsharma/Desktop/projectcode/Excel/kids_fiction_output.xlsx"
