@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 
 export async function GET() {
   try {
@@ -41,17 +42,37 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { title, questionnaireId, answers, content } = body
 
-    const book = await prisma.book.create({
-      data: {
-        title,
-        userId: session.user.id,
-        questionnaireId,
-        answers: answers || {},
-        content: content || { pages: [], settings: { width: 800, height: 1000, backgroundColor: '#ffffff' } },
+    if (!title || typeof title !== 'string') {
+      return NextResponse.json({ error: 'A book title is required.' }, { status: 400 })
+    }
+
+    const defaultContent = {
+      pages: [],
+      settings: {
+        width: 800,
+        height: 1000,
+        backgroundColor: '#ffffff',
       },
-      include: {
-        questionnaire: true
-      }
+    }
+
+    const data: Prisma.BookCreateInput = {
+      title: title.trim(),
+      answers: (answers ?? {}) as any,
+      content: (content ?? defaultContent) as any,
+      user: {
+        connect: { id: session.user.id },
+      },
+      ...(questionnaireId
+        ? {
+            questionnaire: {
+              connect: { id: questionnaireId },
+            },
+          }
+        : {}),
+    }
+
+    const book = await prisma.book.create({
+      data,
     })
 
     return NextResponse.json(book, { status: 201 })

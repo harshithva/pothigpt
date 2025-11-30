@@ -1,0 +1,13 @@
+{
+  "created": "2025-11-27T12:32:29.765649+00:00",
+  "data": [
+    {
+      "is_image_safe": true,
+      "prompt": "A richly detailed illustrated book cover titled 'Voyage to Arcturus' featuring courageous explorer Lily standing on the gleaming deck of the Stardust Skiff, auroras and constellations swirling overhead, elegant Art Deco typography, teal and gold color palette, cinematic glow, 11:18 portrait layout",
+      "resolution": "800x1280",
+      "seed": 979086029,
+      "style_type": "GENERAL",
+      "url": "https://ideogram.ai/api/images/ephemeral/qLXLOQB4ThWcp2l6TgUIww.png?exp=1764333159&sig=cea72a350fbfe1066d5da432fb15561d2c722c962f0d337e80c88595aa33e2ea"
+    }
+  ]
+}

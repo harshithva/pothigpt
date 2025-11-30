@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Card } from '@/components/ui/neopop/Card'
+import { Card, Flex, Container, Text, Heading, Box } from '@radix-ui/themes'
 
 const features = [
   {
@@ -57,31 +57,37 @@ const features = [
 export const Features: React.FC = () => {
   return (
     <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-4">
+      <Container size="4">
+        <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+          <Heading size="9" weight="bold" className="text-gray-900">
             Everything You Need to Create{' '}
             <span className="inline-block bg-amber-400 px-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               Amazing eBooks
             </span>
-          </h2>
-          <p className="text-xl text-gray-700 font-semibold max-w-2xl mx-auto">
+          </Heading>
+          <Text size="5" weight="medium" className="text-gray-700 max-w-2xl">
             From ideation to publication, we've got you covered with powerful features
-          </p>
-        </div>
+          </Text>
+        </Flex>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} hover className="p-8 bg-white">
-              <div className={`w-20 h-20 ${feature.color} border-4 ${feature.borderColor} flex items-center justify-center text-4xl mb-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-lg`}>
-                {feature.emoji}
-              </div>
-              <h3 className={`text-2xl font-black mb-3 ${feature.titleColor}`}>{feature.title}</h3>
-              <p className="text-gray-800 leading-relaxed font-medium">{feature.description}</p>
+            <Card key={index} size="3" variant="surface" className="!p-8 !bg-white hover:!shadow-lg transition-shadow">
+              <Flex direction="column" gap="4">
+                <Box className={`w-20 h-20 ${feature.color} border-4 ${feature.borderColor} flex items-center justify-center text-4xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-lg`}>
+                  {feature.emoji}
+                </Box>
+                <Heading size="6" weight="bold" className={feature.titleColor}>
+                  {feature.title}
+                </Heading>
+                <Text size="3" className="text-gray-800 leading-relaxed">
+                  {feature.description}
+                </Text>
+              </Flex>
             </Card>
           ))}
         </div>
-      </div>
+      </Container>
     </section>
   )
 }

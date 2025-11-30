@@ -12,7 +12,7 @@ export interface Question {
 
 export interface BookWithRelations extends Book {
   user: User
-  questionnaire: Questionnaire
+  questionnaire: Questionnaire | null
 }
 
 export interface QuestionnaireWithBooks extends Questionnaire {
@@ -33,4 +33,28 @@ export interface BookContent {
     backgroundColor: string
   }
 }
+
+export interface SimplifiedBookInput {
+  bookType: 'fiction' | 'non-fiction'
+  audience: 'adult' | 'kids'
+  bookTitle: string
+  chapterCount: number
+}
+
+export interface ChapterStructure {
+  number: number
+  heading: string
+  subheadings: string[]
+}
+
+// Re-export book generator types
+export type {
+  BookGenerationInput,
+  GeneratedOutline,
+  FictionContext,
+  ChapterPrompt,
+  GeneratedBookContent,
+  NonFictionPrompts,
+  FictionPrompts
+} from '@/lib/book-generators/types'
 

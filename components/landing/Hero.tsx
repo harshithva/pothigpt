@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/neopop/Button'
+import { Button, Flex, Container, Text, Badge } from '@radix-ui/themes'
 
 export const Hero: React.FC = () => {
   const router = useRouter()
@@ -14,15 +14,13 @@ export const Hero: React.FC = () => {
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-fuchsia-400 rounded-full opacity-60 animate-bounce" style={{ animationDuration: '4s' }} />
       <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-violet-400 rounded-full opacity-60 animate-pulse" />
       
-      <div className="container mx-auto px-6 z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block mb-6">
-            <div className="px-6 py-2 bg-black text-amber-400 font-bold text-sm uppercase tracking-wider border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-2deg]">
-              AI-Powered eBook Creation
-            </div>
-          </div>
+      <Container size="4" className="z-10">
+        <Flex direction="column" align="center" gap="6" className="max-w-4xl mx-auto text-center">
+          <Badge size="2" variant="solid" color="amber" highContrast className="!px-6 !py-2 !text-sm !uppercase !tracking-wider">
+            AI-Powered eBook Creation
+          </Badge>
           
-          <h1 className="text-6xl md:text-8xl font-black mb-6 leading-tight">
+          <h1 className="text-6xl md:text-8xl font-black leading-tight">
             <span className="inline-block transform hover:scale-105 transition-transform">Create</span>{' '}
             <span className="inline-block bg-amber-400 px-4 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transform rotate-[-1deg] hover:rotate-[1deg] transition-all">
               Amazing
@@ -30,47 +28,56 @@ export const Hero: React.FC = () => {
             <span className="inline-block transform hover:scale-105 transition-transform">eBooks</span>
           </h1>
           
-          <p className="text-xl md:text-2xl text-gray-800 font-semibold mb-10 max-w-2xl mx-auto leading-relaxed">
+          <Text size="5" weight="medium" className="text-gray-800 max-w-2xl">
             Answer a few questions, let AI generate your content, edit it like a pro with our Canva-style editor, 
             and export beautiful PDFs ready to share with the world.
-          </p>
+          </Text>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <div className="transform hover:scale-105 transition-transform">
-              <Button onClick={() => router.push('/signup')}>
-                <span className="text-lg font-bold px-6">Get Started Free</span>
-              </Button>
-            </div>
-            <button
+          <Flex gap="4" wrap="wrap" justify="center" className="mt-4">
+            <Button 
+              size="4" 
+              variant="solid" 
+              color="amber" 
+              highContrast
+              onClick={() => router.push('/signup')}
+              className="!px-8 !font-black !cursor-pointer"
+            >
+              Get Started Free
+            </Button>
+            <Button
+              size="4"
+              variant="outline"
+              color="gray"
+              highContrast
               onClick={() => {
                 document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })
               }}
-              className="px-8 py-4 text-lg font-bold text-black border-4 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+              className="!font-black !cursor-pointer !bg-white"
             >
               See How It Works
-            </button>
-          </div>
+            </Button>
+          </Flex>
           
-          <div className="mt-12 flex flex-wrap gap-8 justify-center items-center text-sm font-bold text-gray-800">
-            <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <span className="text-2xl">✨</span>
-              <span>AI-Powered</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <span className="text-2xl">🎨</span>
-              <span>Professional Editor</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <span className="text-2xl">📄</span>
-              <span>PDF Export</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/80 px-4 py-2 rounded-full border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              <span className="text-2xl">⚡</span>
-              <span>Fast & Easy</span>
-            </div>
-          </div>
-        </div>
-      </div>
+          <Flex gap="4" wrap="wrap" justify="center" className="mt-8">
+            <Badge size="3" variant="surface" color="gray" radius="full" className="!px-4 !py-2 !bg-white/80 !border-2 !border-black !shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-2xl mr-2">✨</span>
+              <Text weight="bold">AI-Powered</Text>
+            </Badge>
+            <Badge size="3" variant="surface" color="gray" radius="full" className="!px-4 !py-2 !bg-white/80 !border-2 !border-black !shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-2xl mr-2">🎨</span>
+              <Text weight="bold">Professional Editor</Text>
+            </Badge>
+            <Badge size="3" variant="surface" color="gray" radius="full" className="!px-4 !py-2 !bg-white/80 !border-2 !border-black !shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-2xl mr-2">📄</span>
+              <Text weight="bold">PDF Export</Text>
+            </Badge>
+            <Badge size="3" variant="surface" color="gray" radius="full" className="!px-4 !py-2 !bg-white/80 !border-2 !border-black !shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-2xl mr-2">⚡</span>
+              <Text weight="bold">Fast & Easy</Text>
+            </Badge>
+          </Flex>
+        </Flex>
+      </Container>
     </section>
   )
 }

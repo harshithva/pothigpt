@@ -36,18 +36,18 @@ model Questionnaire {
 }
 
 model Book {
-  id              String        @id @default(cuid())
+  id              String          @id @default(cuid())
   title           String
   userId          String
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questionnaireId String
-  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id])
-  answers         Json          // User's questionnaire answers
-  content         Json          // Canvas editor state (Fabric.js JSON)
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionnaireId String?
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id])
+  answers         Json            // Stores simplified book creation input (type, audience, chapter count, etc.)
+  content         Json            // Canvas editor state (Fabric.js JSON)
   coverImage      String?
-  status          BookStatus    @default(DRAFT)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  status          BookStatus      @default(DRAFT)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@map("books")
 }

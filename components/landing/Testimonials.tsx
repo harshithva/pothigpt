@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Card } from '@/components/ui/neopop/Card'
+import { Card, Flex, Container, Text, Heading, Avatar, Box } from '@radix-ui/themes'
 import Image from 'next/image'
 
 interface Testimonial {
@@ -77,51 +77,57 @@ export const Testimonials: React.FC = () => {
 
   return (
     <section className="py-24 bg-white">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-black mb-4">
+      <Container size="4">
+        <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+          <Heading size="9" weight="bold">
             What Our{' '}
             <span className="inline-block bg-emerald-500 px-4 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               Users Say
             </span>
-          </h2>
-          <p className="text-xl text-gray-700 font-semibold max-w-2xl mx-auto">
+          </Heading>
+          <Text size="5" weight="medium" className="text-gray-700 max-w-2xl">
             Join thousands of creators who've already published amazing ebooks
-          </p>
-        </div>
+          </Text>
+        </Flex>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} hover className="p-8 bg-white">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative w-20 h-20 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl overflow-hidden bg-gradient-to-br from-amber-400 to-fuchsia-500">
-                  <Image
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
-                </div>
-                <div>
-                  <div className="font-black text-lg text-gray-900">{testimonial.name}</div>
-                  <div className="text-gray-700 text-sm font-semibold">{testimonial.role}</div>
-                </div>
-              </div>
-              
-              <div className="flex gap-1 mb-4">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <span key={i} className="text-amber-500 text-2xl">★</span>
-                ))}
-              </div>
-              
-              <p className="text-gray-800 leading-relaxed font-medium italic">
-                "{testimonial.quote}"
-              </p>
+            <Card key={index} size="3" variant="surface" className="!p-8 !bg-white hover:!shadow-lg transition-shadow">
+              <Flex direction="column" gap="4">
+                <Flex align="center" gap="4">
+                  <Box className="relative w-20 h-20 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl overflow-hidden bg-gradient-to-br from-amber-400 to-fuchsia-500">
+                    <Image
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  </Box>
+                  <Flex direction="column" gap="1">
+                    <Text size="4" weight="bold" className="text-gray-900">
+                      {testimonial.name}
+                    </Text>
+                    <Text size="2" weight="medium" className="text-gray-700">
+                      {testimonial.role}
+                    </Text>
+                  </Flex>
+                </Flex>
+                
+                <Flex gap="1">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <span key={i} className="text-amber-500 text-2xl">★</span>
+                  ))}
+                </Flex>
+                
+                <Text size="3" className="text-gray-800 leading-relaxed italic">
+                  "{testimonial.quote}"
+                </Text>
+              </Flex>
             </Card>
           ))}
         </div>
-      </div>
+      </Container>
     </section>
   )
 }
