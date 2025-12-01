@@ -158,11 +158,11 @@ Create at least 5 chapters with rich, detailed content. Each content paragraph s
     
     const content = await chatCompletion(
       [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
       {
         temperature: 0.7,
         max_tokens: 8000,
@@ -350,11 +350,11 @@ Important formatting requirements:
     
     const content = await chatCompletion(
       [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
       {
         temperature: 0.7,
         max_tokens: 2000,
@@ -495,7 +495,7 @@ Make it practical, engaging, and build upon previous chapters. Write in a clear,
     ]
     
     const chapterContent = await chatCompletion(
-      messages,
+        messages,
       {
         temperature: 0.7,
         max_tokens: 8000,
@@ -537,11 +537,11 @@ Return only the improved content without any additional explanation.`
     
     const improvedContent = await chatCompletion(
       [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
       {
         temperature: 0.7,
         max_tokens: 4000,

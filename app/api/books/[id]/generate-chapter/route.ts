@@ -168,12 +168,12 @@ export async function POST(
       } else {
         // Fallback to old method
         const result = await generateChapterContent(
-          chapterNumber,
-          chapterInfo.title,
-          content.outline.title,
-          content.answers || {},
-          content.conversationHistory || []
-        )
+      chapterNumber,
+      chapterInfo.title,
+      content.outline.title,
+      content.answers || {},
+      content.conversationHistory || []
+    )
         chapterContent = result.content
         content.conversationHistory = result.updatedHistory
       }
