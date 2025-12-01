@@ -1352,13 +1352,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
   const bringToFront = () => {
     if (!canvas || !selectedObject) return
-    canvas.bringToFront(selectedObject)
+    selectedObject.bringToFront()
     canvas.renderAll()
   }
 
   const sendToBack = () => {
     if (!canvas || !selectedObject) return
-    canvas.sendToBack(selectedObject)
+    selectedObject.sendToBack()
     canvas.renderAll()
   }
 
