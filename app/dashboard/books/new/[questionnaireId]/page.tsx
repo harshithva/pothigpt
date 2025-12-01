@@ -189,7 +189,9 @@ export default function AnswerQuestionnairePage() {
     )
   }
 
-  const questions = Array.isArray(questionnaire.questions) ? questionnaire.questions : []
+  const questions: Question[] = Array.isArray(questionnaire.questions) 
+    ? (questionnaire.questions as unknown as Question[])
+    : []
 
   return (
     <Box className="max-w-4xl mx-auto">
@@ -291,7 +293,7 @@ export default function AnswerQuestionnairePage() {
       {/* Questions Form */}
       <form onSubmit={handleSubmit}>
         <Flex direction="column" gap="6">
-          {questions.map((question: Question, index: number) => (
+          {questions.map((question, index) => (
             <Card 
               key={question.id} 
               size="4"
