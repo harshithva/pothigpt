@@ -711,7 +711,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       const startNewPage = () => {
         if (currentPageCanvas && yPosition > pageMargin) {
           // Finalize previous page
-          const pageData = currentPageCanvas.toJSON()
+          const canvas = currentPageCanvas as fabric.Canvas
+          const pageData = canvas.toJSON()
           const pageName = currentPageIndex === 1
             ? `${sectionType === 'prologue' ? 'Prologue' : 'Epilogue'}: ${sectionTitle.substring(0, 20)}...`
             : `${sectionType === 'prologue' ? 'Prologue' : 'Epilogue'} Page ${currentPageIndex}`
@@ -725,8 +726,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             originX: 'center',
             selectable: false,
           })
-          currentPageCanvas.add(pageNumber)
-          currentPageCanvas.renderAll()
+          canvas.add(pageNumber)
+          canvas.renderAll()
 
           newPages.push({
             id: `${sectionType}-page-${currentPageIndex}`,
@@ -750,7 +751,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             fill: '#000000',
             lineHeight: 1.2,
           })
-          currentPageCanvas.add(titleText)
+          const canvas = currentPageCanvas as fabric.Canvas
+          canvas.add(titleText)
           yPosition += titleText.height! + 40
         }
       }
@@ -816,7 +818,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
       // Finalize last page
       if (currentPageCanvas) {
-        const pageData = currentPageCanvas.toJSON()
+        const canvas = currentPageCanvas as fabric.Canvas
+        const pageData = canvas.toJSON()
         const pageName = currentPageIndex === 1
           ? `${sectionType === 'prologue' ? 'Prologue' : 'Epilogue'}: ${sectionTitle.substring(0, 20)}...`
           : `${sectionType === 'prologue' ? 'Prologue' : 'Epilogue'} Page ${currentPageIndex}`
@@ -830,8 +833,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           originX: 'center',
           selectable: false,
         })
-        currentPageCanvas.add(pageNumber)
-        currentPageCanvas.renderAll()
+        canvas.add(pageNumber)
+        canvas.renderAll()
 
         newPages.push({
           id: `${sectionType}-page-${currentPageIndex}`,
@@ -932,7 +935,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               fill: '#000000',
               lineHeight: 1.2,
             })
-            currentPageCanvas.add(chapterTitle)
+            const canvas = currentPageCanvas as fabric.Canvas
+            canvas.add(chapterTitle)
             yPosition += chapterTitle.height! + 40 // More space after title
             isFirstPageOfChapter = false
           }
@@ -972,7 +976,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               fill: '#333333',
               lineHeight: 1.8,
             })
-            currentPageCanvas.add(text)
+            const canvas = currentPageCanvas as fabric.Canvas
+            canvas.add(text)
             yPosition += textHeight + paragraphSpacing
           }
         }
