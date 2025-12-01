@@ -789,7 +789,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               fill: '#333333',
               lineHeight: 1.8,
             })
-            currentPageCanvas.add(text)
+            const canvas = currentPageCanvas as fabric.Canvas
+            canvas.add(text)
             yPosition += textHeight + paragraphSpacing
           }
         }
