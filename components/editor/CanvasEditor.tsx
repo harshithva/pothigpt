@@ -1551,18 +1551,24 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   }
 
   // Image upload function
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !canvas) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
-      fabric.Image.fromURL(event.target?.result as string, (img) => {
+    reader.onload = async (event) => {
+      const dataUrl = event.target?.result as string
+      if (!dataUrl) return
+      
+      try {
+        const img = await fabric.Image.fromURL(dataUrl)
         img.scaleToWidth(300)
         canvas.add(img)
         canvas.renderAll()
         saveHistory()
-      })
+      } catch (error) {
+        console.error('Error loading image:', error)
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -2350,7 +2356,9 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                               onError={(e) => {
                                 // Fallback to text if image fails to load
                                 e.currentTarget.style.display = 'none'
-                                e.currentTarget.nextElementSibling.style.display = 'flex'
+                                if (e.currentTarget.nextElementSibling) {
+                                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex'
+                                }
                               }}
                             />
                           ) : page.data ? (

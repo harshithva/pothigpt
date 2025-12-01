@@ -30,7 +30,7 @@ export const Input: React.FC<InputProps> = ({
         label={label}
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
         placeholder={placeholder}
         colorConfig={{
           labelColor: '#000000',

@@ -63,7 +63,7 @@ function extractTextFromCanvas(canvasData: any): Paragraph[] {
 
       if (runs.length > 0) {
         // Determine alignment
-        let alignment: AlignmentType = AlignmentType.LEFT
+        let alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT
         if (obj.textAlign === 'center') {
           alignment = AlignmentType.CENTER
         } else if (obj.textAlign === 'right') {

@@ -23,33 +23,35 @@ async function canvasToImage(canvasData: any): Promise<string> {
         backgroundColor: '#ffffff',
       })
 
-      // Load the canvas data
-      fabricCanvas.loadFromJSON(canvasData, () => {
-        fabricCanvas.renderAll()
+      // Load the canvas data (loadFromJSON now returns a Promise)
+      fabricCanvas.loadFromJSON(canvasData)
+        .then(() => {
+          fabricCanvas.renderAll()
 
-        // Small delay to ensure canvas is fully rendered
-        setTimeout(() => {
-          try {
-            // Convert to image with high resolution
-            const dataURL = fabricCanvas.toDataURL({
-              format: 'png',
-              quality: 1.0,
-              multiplier: 3, // 3x resolution for sharper output
-            })
+          // Small delay to ensure canvas is fully rendered
+          setTimeout(() => {
+            try {
+              // Convert to image with high resolution
+              const dataURL = fabricCanvas.toDataURL({
+                format: 'png',
+                quality: 1.0,
+                multiplier: 3, // 3x resolution for sharper output
+              })
 
-            // Clean up
-            fabricCanvas.dispose()
+              // Clean up
+              fabricCanvas.dispose()
 
-            resolve(dataURL)
-          } catch (error) {
-            fabricCanvas.dispose()
-            reject(error)
-          }
-        }, 100)
-      }, (error: any) => {
-        fabricCanvas.dispose()
-        reject(error)
-      })
+              resolve(dataURL)
+            } catch (error) {
+              fabricCanvas.dispose()
+              reject(error)
+            }
+          }, 100)
+        })
+        .catch((error: any) => {
+          fabricCanvas.dispose()
+          reject(error)
+        })
     } catch (error) {
       reject(error)
     }
