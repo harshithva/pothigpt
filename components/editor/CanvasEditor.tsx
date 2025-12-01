@@ -809,7 +809,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               fontStyle: 'italic',
             }
           )
-          currentPageCanvas.add(placeholder)
+          const canvas = currentPageCanvas as fabric.Canvas
+          canvas.add(placeholder)
         }
       }
 
