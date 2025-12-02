@@ -12,33 +12,38 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials")
-        }
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            return null
           }
-        })
 
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials")
-        }
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email.toLowerCase().trim()
+            }
+          })
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+          if (!user || !user.password) {
+            return null
+          }
 
-        if (!isCorrectPassword) {
-          throw new Error("Invalid credentials")
-        }
+          const isCorrectPassword = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          if (!isCorrectPassword) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          }
+        } catch (error) {
+          console.error('Authorization error:', error)
+          return null
         }
       }
     })
@@ -64,5 +69,6 @@ export const authOptions: NextAuthOptions = {
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
 }
 
