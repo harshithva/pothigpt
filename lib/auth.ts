@@ -58,8 +58,12 @@ export const authOptions: NextAuthOptions = {
           console.error('[AUTH] Authorization error:', error)
           if (error instanceof Error) {
             console.error('[AUTH] Error message:', error.message)
-            console.error('[AUTH] Error stack:', error.stack)
+            console.error('[AUTH] Error name:', error.name)
+            if (error.stack) {
+              console.error('[AUTH] Error stack:', error.stack)
+            }
           }
+          // Don't expose database errors to client
           return null
         }
       }
