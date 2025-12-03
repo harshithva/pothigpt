@@ -10,9 +10,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Ensure Prisma client and binaries are properly handled
+  // Optimize for serverless - don't externalize Prisma
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: [],
   },
 };
 

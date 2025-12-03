@@ -7,9 +7,5 @@
       "maxDuration": 30,
       "memory": 1024
     }
-  },
-  "env": {
-    "PRISMA_QUERY_ENGINE_LIBRARY": "node_modules/.prisma/client/libquery_engine-rhel-openssl-3.0.x.so.node",
-    "PRISMA_QUERY_ENGINE_BINARY": "node_modules/.prisma/client/libquery_engine-rhel-openssl-3.0.x.so.node"
   }
 }
