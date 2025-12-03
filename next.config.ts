@@ -10,10 +10,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Optimize for serverless - don't externalize Prisma
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
 };
 
 export default nextConfig;
