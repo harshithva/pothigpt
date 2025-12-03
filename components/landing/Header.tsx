@@ -1,108 +1,120 @@
-'use client'
+"use client";
+import React, { useState } from "react";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { BookOpen, Menu, X } from "lucide-react";
 
-import { Container, Flex, Heading, Button, Box, Text } from '@radix-ui/themes'
-import { ReaderIcon, RocketIcon } from '@radix-ui/react-icons'
-import Link from 'next/link'
+export const Header = () => {
+  const { scrollY } = useScroll();
+  const [hidden, setHidden] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-export function Header() {
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious();
+    if (latest > previous && latest > 150) {
+      setHidden(true);
+    } else {
+      setHidden(false);
+    }
+  });
+
+  const navItems = [
+    { name: "Features", link: "#features" },
+    { name: "How It Works", link: "#how-it-works" },
+    { name: "Testimonials", link: "#testimonials" },
+    { name: "FAQ", link: "#faq" },
+  ];
+
   return (
-    <Box 
-      className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b"
-      style={{
-        borderColor: '#e0e7ff',
-        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
-      }}
-    >
-      <Container size="4">
-        <Flex justify="between" align="center" py="2 md:3" px={{ initial: '4', md: '0' }}>
-          {/* Logo */}
-          <Link href="/" className="no-underline">
-            <Flex align="center" gap="2 md:3" className="hover:opacity-80 transition-all">
-              <Flex
-                align="center"
-                justify="center"
-                className="w-8 h-8 md:w-10 md:h-10 rounded-xl"
-                style={{
-                  background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
-                }}
-              >
-                <ReaderIcon width="18" height="18" className="md:w-[22px] md:h-[22px]" color="white" />
-              </Flex>
-              <Heading size="5" weight="bold" style={{ color: '#1e293b' }} className="hidden sm:block">
-                PothiGPT
-              </Heading>
-            </Flex>
+    <>
+      <motion.nav
+        variants={{
+          visible: { y: 0 },
+          hidden: { y: "-100%" },
+        }}
+        animate={hidden ? "hidden" : "visible"}
+        transition={{
+          duration: 0.35,
+          ease: "easeInOut",
+        }}
+        className={cn(
+          "fixed top-0 inset-x-0 max-w-5xl mx-auto z-50 border border-slate-200 rounded-none md:rounded-full bg-white/90 backdrop-blur-md shadow-sm pr-2 pl-4 py-2 md:top-6 items-center justify-between flex"
+        )}
+      >
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-white" />
+          </div>
+          <span className="font-bold text-lg text-slate-900 hidden sm:block">
+            PothiGPT
+          </span>
+        </Link>
+
+        <div className="hidden md:flex items-center space-x-4">
+          {navItems.map((navItem, idx) => (
+            <Link
+              key={`link=${idx}`}
+              href={navItem.link}
+              className={cn(
+                "relative items-center flex space-x-1 text-slate-600 hover:text-blue-600 text-sm font-medium transition-colors"
+              )}
+            >
+              <span>{navItem.name}</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="hidden md:block px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+          >
+            Login
           </Link>
+          <Link
+            href="/signup"
+            className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            Get Started
+          </Link>
+          <button
+            className="md:hidden p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? (
+              <X className="w-5 h-5 text-slate-600" />
+            ) : (
+              <Menu className="w-5 h-5 text-slate-600" />
+            )}
+          </button>
+        </div>
+      </motion.nav>
 
-          {/* Navigation Links - Hidden on mobile */}
-          <Flex gap="1" className="hidden lg:flex">
-            <a 
-              href="#features" 
-              className="px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all font-medium"
-              style={{ fontSize: '15px' }}
-            >
-              Features
-            </a>
-            <a 
-              href="#how-it-works" 
-              className="px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all font-medium"
-              style={{ fontSize: '15px' }}
-            >
-              How It Works
-            </a>
-            <a 
-              href="#testimonials" 
-              className="px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all font-medium"
-              style={{ fontSize: '15px' }}
-            >
-              Testimonials
-            </a>
-            <a 
-              href="#faq" 
-              className="px-4 py-2 rounded-lg text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all font-medium"
-              style={{ fontSize: '15px' }}
-            >
-              FAQ
-            </a>
-          </Flex>
-
-          {/* Auth Buttons */}
-          <Flex gap="2 md:3" align="center">
-            <Button 
-              size="2"
-              variant="ghost" 
-              color="gray" 
-              asChild 
-              className="!cursor-pointer hidden md:flex !font-medium"
-            >
-              <Link href="/login">
-                <Text>Login</Text>
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-40 bg-white pt-24 px-6 md:hidden">
+          <div className="flex flex-col space-y-4">
+            {navItems.map((navItem, idx) => (
+              <Link
+                key={`mobile-link=${idx}`}
+                href={navItem.link}
+                className="text-lg font-medium text-slate-600 hover:text-blue-600"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {navItem.name}
               </Link>
-            </Button>
-            <Button 
-              size="2"
-              variant="solid" 
-              color="blue" 
-              highContrast 
-              asChild 
-              className="!cursor-pointer !font-medium"
-              style={{
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)'
-              }}
+            ))}
+            <Link
+              href="/login"
+              className="text-lg font-medium text-slate-600 hover:text-blue-600"
+              onClick={() => setIsMobileMenuOpen(false)}
             >
-              <Link href="/signup">
-                <Flex align="center" gap="1 md:2">
-                  <RocketIcon width="14" height="14" className="md:w-4 md:h-4" />
-                  <Text className="hidden sm:inline">Get Started</Text>
-                  <Text className="sm:hidden">Start</Text>
-                </Flex>
-              </Link>
-            </Button>
-          </Flex>
-        </Flex>
-      </Container>
-    </Box>
-  )
-}
-
+              Login
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
