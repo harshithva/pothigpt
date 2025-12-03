@@ -76,6 +76,7 @@ export async function POST(request: Request) {
       { status: 201 }
     )
   } catch (error) {
+    // Always log full error details for debugging (even in production)
     console.error('[SIGNUP] Error occurred:')
     console.error('[SIGNUP] Error type:', error?.constructor?.name)
     console.error('[SIGNUP] Error message:', error instanceof Error ? error.message : 'Unknown error')
@@ -86,7 +87,13 @@ export async function POST(request: Request) {
         name: error.name,
         message: error.message,
         stack: error.stack,
+        cause: error.cause,
       })
+    }
+
+    // Check for specific Prisma errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('[SIGNUP] Prisma error code:', error.code)
     }
 
     // In development, return detailed error message
