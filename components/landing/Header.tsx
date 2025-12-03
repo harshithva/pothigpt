@@ -14,22 +14,22 @@ export function Header() {
       }}
     >
       <Container size="4">
-        <Flex justify="between" align="center" py="3" px={{ initial: '4', md: '0' }}>
+        <Flex justify="between" align="center" py="2 md:3" px={{ initial: '4', md: '0' }}>
           {/* Logo */}
           <Link href="/" className="no-underline">
-            <Flex align="center" gap="3" className="hover:opacity-80 transition-all">
+            <Flex align="center" gap="2 md:3" className="hover:opacity-80 transition-all">
               <Flex
                 align="center"
                 justify="center"
-                className="w-10 h-10 rounded-xl"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-xl"
                 style={{
                   background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                   boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
                 }}
               >
-                <ReaderIcon width="22" height="22" color="white" />
+                <ReaderIcon width="18" height="18" className="md:w-[22px] md:h-[22px]" color="white" />
               </Flex>
-              <Heading size="6" weight="bold" style={{ color: '#1e293b' }}>
+              <Heading size="5" weight="bold" style={{ color: '#1e293b' }} className="hidden sm:block">
                 PothiGPT
               </Heading>
             </Flex>
@@ -68,9 +68,9 @@ export function Header() {
           </Flex>
 
           {/* Auth Buttons */}
-          <Flex gap="3" align="center">
+          <Flex gap="2 md:3" align="center">
             <Button 
-              size="3"
+              size="2"
               variant="ghost" 
               color="gray" 
               asChild 
@@ -81,7 +81,7 @@ export function Header() {
               </Link>
             </Button>
             <Button 
-              size="3"
+              size="2"
               variant="solid" 
               color="blue" 
               highContrast 
@@ -92,9 +92,10 @@ export function Header() {
               }}
             >
               <Link href="/signup">
-                <Flex align="center" gap="2">
-                  <RocketIcon width="16" height="16" />
-                  <Text>Get Started</Text>
+                <Flex align="center" gap="1 md:2">
+                  <RocketIcon width="14" height="14" className="md:w-4 md:h-4" />
+                  <Text className="hidden sm:inline">Get Started</Text>
+                  <Text className="sm:hidden">Start</Text>
                 </Flex>
               </Link>
             </Button>

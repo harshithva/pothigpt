@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "DATABASE_URL=${DATABASE_URL:-postgresql://placeholder} prisma generate && next build",
+    "build": "DATABASE_URL=${DATABASE_URL:-mongodb://localhost:27017/ebook-maker} prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "DATABASE_URL=${DATABASE_URL:-postgresql://placeholder} prisma generate",
+    "postinstall": "DATABASE_URL=${DATABASE_URL:-mongodb://localhost:27017/ebook-maker} prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio"

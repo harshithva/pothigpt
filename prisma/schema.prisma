@@ -6,12 +6,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   email     String   @unique
   name      String?
   password  String
@@ -23,7 +23,7 @@ model User {
 }
 
 model Questionnaire {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String?
   questions   Json     // Array of question objects with type, text, options, etc.
@@ -36,11 +36,11 @@ model Questionnaire {
 }
 
 model Book {
-  id              String          @id @default(cuid())
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
   title           String
-  userId          String
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  questionnaireId String?
+  userId          String          @db.ObjectId
+  user            User            @relation(fields: [userId], references: [id])
+  questionnaireId String?         @db.ObjectId
   questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id])
   answers         Json            // Stores simplified book creation input (type, audience, chapter count, etc.)
   content         Json            // Canvas editor state (Fabric.js JSON)

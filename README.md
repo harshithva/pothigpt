@@ -12,14 +12,14 @@ A modern, full-stack eBook creation platform powered by AI, featuring a Canva-st
 - **PDF Export**: Export your finished ebooks as high-quality PDFs
 - **Auto-Save**: Never lose your work with automatic saving
 - **User Authentication**: Secure authentication with NextAuth.js
-- **PostgreSQL Database**: Robust data storage with Prisma ORM
+- **MongoDB Database**: Robust NoSQL data storage with Prisma ORM
 
 ## 🛠️ Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **UI**: Neopop by CRED + TailwindCSS
-- **Database**: PostgreSQL + Prisma ORM
+- **Database**: MongoDB + Prisma ORM
 - **Authentication**: NextAuth.js
 - **AI**: OpenRouter API
 - **Canvas Editor**: Fabric.js
@@ -29,7 +29,7 @@ A modern, full-stack eBook creation platform powered by AI, featuring a Canva-st
 ## 📋 Prerequisites
 
 - Node.js 18+
-- PostgreSQL database (or use the provided Prisma cloud database)
+- MongoDB database (MongoDB Atlas or local MongoDB instance)
 - OpenRouter API key
 
 ## 🎯 Getting Started
@@ -42,11 +42,11 @@ npm install
 
 ### 2. Environment Setup
 
-The `.env` file is already configured with the PostgreSQL connection. You need to add your OpenRouter API key:
+Create a `.env` file in the root directory with the following:
 
 ```env
-# Database (already configured)
-DATABASE_URL="postgres://..."
+# MongoDB Connection (use your MongoDB Atlas connection string)
+DATABASE_URL="mongodb+srv://harsh:kkrpUunNIOzOJ9e9@cluster0.al1ddrw.mongodb.net/ebook-maker?retryWrites=true&w=majority"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-change-this-in-production"
@@ -56,15 +56,19 @@ NEXTAUTH_URL="http://localhost:3000"
 OPENROUTER_API_KEY="your-openrouter-api-key"
 ```
 
+**Note**: Replace the DATABASE_URL with your MongoDB connection string. Make sure to append a database name (e.g., `/ebook-maker`) and connection options.
+
 Get your OpenRouter API key from: https://openrouter.ai/
 
 ### 3. Database Setup
 
-The database is already migrated. If you need to reset or migrate again:
+Push the schema to MongoDB (MongoDB uses `db push` instead of migrations):
 
 ```bash
 npm run db:push
 ```
+
+This will create the collections in your MongoDB database.
 
 ### 4. Seed Sample Data
 
@@ -245,7 +249,7 @@ MIT
 - Make sure to add your own OpenRouter API key
 - The demo user is for testing purposes
 - Change NEXTAUTH_SECRET in production
-- Database is already configured with Prisma Cloud
+- Update DATABASE_URL with your MongoDB connection string
 - All Neopop components are customized for the project
 
 ---

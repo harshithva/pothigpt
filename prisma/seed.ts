@@ -22,60 +22,66 @@ async function main() {
   console.log('Created user:', user.email)
 
   // Create sample questionnaires
-  const businessBookQuestionnaire = await prisma.questionnaire.upsert({
-    where: { id: 'business-guide' },
-    update: {},
-    create: {
-      id: 'business-guide',
-      title: 'Business Strategy eBook Guide',
-      description: 'Create a comprehensive business strategy ebook based on your expertise',
-      isPublished: true,
-      questions: [
-        {
-          id: 'q1',
-          type: 'text',
-          question: 'What is your business or industry focus?',
-          required: true,
-        },
-        {
-          id: 'q2',
-          type: 'textarea',
-          question: 'What are the main challenges your target audience faces?',
-          required: true,
-        },
-        {
-          id: 'q3',
-          type: 'textarea',
-          question: 'What unique insights or strategies can you share?',
-          required: true,
-        },
-        {
-          id: 'q4',
-          type: 'multiple-choice',
-          question: 'What is the experience level of your target readers?',
-          options: ['Beginner', 'Intermediate', 'Advanced', 'All levels'],
-          required: true,
-        },
-        {
-          id: 'q5',
-          type: 'textarea',
-          question: 'What are the key outcomes readers should achieve after reading?',
-          required: true,
-        },
-      ],
-    },
+  // For MongoDB, we'll use findFirst and create pattern since we can't use custom string IDs
+  let businessBookQuestionnaire = await prisma.questionnaire.findFirst({
+    where: { title: 'Business Strategy eBook Guide' },
   })
 
-  const personalDevelopmentQuestionnaire = await prisma.questionnaire.upsert({
-    where: { id: 'personal-dev' },
-    update: {},
-    create: {
-      id: 'personal-dev',
-      title: 'Personal Development eBook',
-      description: 'Create an inspiring personal development ebook',
-      isPublished: true,
-      questions: [
-        {
+  if (!businessBookQuestionnaire) {
+    businessBookQuestionnaire = await prisma.questionnaire.create({
+      data: {
+        title: 'Business Strategy eBook Guide',
+        description: 'Create a comprehensive business strategy ebook based on your expertise',
+        isPublished: true,
+        questions: [
+          {
+            id: 'q1',
+            type: 'text',
+            question: 'What is your business or industry focus?',
+            required: true,
+          },
+          {
+            id: 'q2',
+            type: 'textarea',
+            question: 'What are the main challenges your target audience faces?',
+            required: true,
+          },
+          {
+            id: 'q3',
+            type: 'textarea',
+            question: 'What unique insights or strategies can you share?',
+            required: true,
+          },
+          {
+            id: 'q4',
+            type: 'multiple-choice',
+            question: 'What is the experience level of your target readers?',
+            options: ['Beginner', 'Intermediate', 'Advanced', 'All levels'],
+            required: true,
+          },
+          {
+            id: 'q5',
+            type: 'textarea',
+            question: 'What are the key outcomes readers should achieve after reading?',
+            required: true,
+          },
+        ],
+      },
+    })
+  }
+
+  let personalDevelopmentQuestionnaire = await prisma.questionnaire.findFirst({
+    where: { title: 'Personal Development eBook' },
+  })
+
+  if (!personalDevelopmentQuestionnaire) {
+    personalDevelopmentQuestionnaire = await prisma.questionnaire.create({
+      data: {
+        title: 'Personal Development eBook',
+        description: 'Create an inspiring personal development ebook',
+        isPublished: true,
+        questions: [
+          {
           id: 'q1',
           type: 'text',
           question: 'What is the main topic of personal growth you want to cover?',
@@ -108,18 +114,21 @@ async function main() {
         },
       ],
     },
+    })
+  }
+
+  let howToGuideQuestionnaire = await prisma.questionnaire.findFirst({
+    where: { title: 'How-To Guide eBook' },
   })
 
-  const howToGuideQuestionnaire = await prisma.questionnaire.upsert({
-    where: { id: 'how-to-guide' },
-    update: {},
-    create: {
-      id: 'how-to-guide',
-      title: 'How-To Guide eBook',
-      description: 'Create a practical step-by-step guide',
-      isPublished: true,
-      questions: [
-        {
+  if (!howToGuideQuestionnaire) {
+    howToGuideQuestionnaire = await prisma.questionnaire.create({
+      data: {
+        title: 'How-To Guide eBook',
+        description: 'Create a practical step-by-step guide',
+        isPublished: true,
+        questions: [
+          {
           id: 'q1',
           type: 'text',
           question: 'What skill or process will you teach?',
@@ -152,7 +161,8 @@ async function main() {
         },
       ],
     },
-  })
+    })
+  }
 
   console.log('Created questionnaires:')
   console.log('- ', businessBookQuestionnaire.title)

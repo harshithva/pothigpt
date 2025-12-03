@@ -8,15 +8,15 @@ export default function Home() {
       <Header />
       <main className="min-h-screen">
         {/* Hero Section */}
-        <section className="py-40 relative overflow-hidden" style={{
+        <section className="py-16 md:py-32 lg:py-40 relative overflow-hidden" style={{
           background: 'linear-gradient(180deg, #eff6ff 0%, #dbeafe 50%, #ffffff 100%)'
         }}>
           {/* Decorative elements */}
-          <Box className="absolute top-20 right-10 w-72 h-72 bg-blue-200 rounded-full opacity-20 blur-3xl" />
-          <Box className="absolute bottom-20 left-10 w-96 h-96 bg-blue-300 rounded-full opacity-20 blur-3xl" />
+          <Box className="hidden md:block absolute top-10 md:top-20 right-5 md:right-10 w-48 md:w-72 md:h-72 bg-blue-200 rounded-full opacity-20 blur-3xl" />
+          <Box className="hidden md:block absolute bottom-10 md:bottom-20 left-5 md:left-10 w-64 md:w-96 md:h-96 bg-blue-300 rounded-full opacity-20 blur-3xl" />
           
           <Container size="4" className="relative z-10">
-            <Flex direction="column" align="center" gap="8" className="text-center">
+            <Flex direction="column" align="center" gap="4 md:8" className="text-center">
               <Badge size="2" color="blue" variant="soft" radius="full" highContrast>
                 🚀 AI-Powered Ebook Creation Platform
               </Badge>
@@ -25,29 +25,29 @@ export default function Home() {
                 size="9" 
                 weight="bold" 
                 className="max-w-5xl gradient-text"
-                style={{ lineHeight: '1.1', fontSize: 'clamp(2.5rem, 6vw, 4.5rem)' }}
+                style={{ lineHeight: '1.1', fontSize: 'clamp(2rem, 6vw, 4.5rem)' }}
               >
                 Create Professional Ebooks in Minutes—No Design or Writing Skills Required
               </Heading>
               
-              <Text size="6" className="max-w-3xl" style={{ color: '#475569', lineHeight: '1.6' }}>
+              <Text size="5" className="max-w-3xl px-4 md:px-0 text-base md:text-lg" style={{ color: '#475569', lineHeight: '1.6' }}>
                 Answer simple questions, let AI generate your content, customize with our visual editor, and export a beautiful ebook. It is that easy.
               </Text>
 
-              <Flex gap="4" className="mt-6">
+              <Flex direction="column" align="stretch" className="flex-col sm:flex-row gap-3 md:gap-4 mt-6 w-full sm:w-auto px-4 sm:px-0">
                 <Button 
-                  size="4" 
+                  size="3" 
                   variant="solid" 
                   color="blue" 
                   highContrast 
                   asChild 
                   className="!cursor-pointer shadow-glow-blue"
-                  style={{ paddingLeft: '2rem', paddingRight: '2rem' }}
+                  style={{ paddingLeft: '1.5rem md:2rem', paddingRight: '1.5rem md:2rem' }}
                 >
                   <Link href="/signup">Start Creating Free →</Link>
                 </Button>
                 <Button 
-                  size="4" 
+                  size="3" 
                   variant="outline" 
                   color="blue" 
                   asChild 
@@ -60,14 +60,14 @@ export default function Home() {
               {/* Enhanced Visual Preview */}
               <Card 
                 size="4" 
-                className="mt-12 w-full max-w-4xl shadow-xl-blue"
+                className="mt-8 md:mt-12 w-full max-w-4xl shadow-xl-blue mx-4 md:mx-0"
                 style={{ 
                   border: '1px solid rgba(37, 99, 235, 0.2)',
                   background: 'rgba(255, 255, 255, 0.9)',
                   backdropFilter: 'blur(10px)'
                 }}
               >
-                <Grid columns={{ initial: "1", md: "3" }} gap="6" p="6">
+                <Grid columns={{ initial: "1", md: "3" }} gap="4 md:6" p="4 md:6">
                   <Card variant="surface" className="hover-lift" style={{ border: '1px solid #e0e7ff' }}>
                     <Flex direction="column" gap="3" align="center" p="4">
                       <Box 
@@ -111,19 +111,19 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="py-24 bg-white" id="features">
+        <section className="py-12 md:py-20 lg:py-24 bg-white" id="features">
           <Container size="4">
-            <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+            <Flex direction="column" align="center" gap="4 md:6" className="text-center mb-8 md:mb-16 px-4 md:px-0">
               <Badge size="2" color="blue" variant="soft">Features</Badge>
-              <Heading size="8" weight="bold" className="max-w-3xl">
+              <Heading size="7" weight="bold" className="max-w-3xl text-3xl md:text-4xl">
                 Everything You Need to Create Amazing Ebooks
               </Heading>
-              <Text size="5" color="gray" className="max-w-2xl">
+              <Text size="4" color="gray" className="max-w-2xl text-base md:text-lg">
                 Powerful features designed to make ebook creation effortless
               </Text>
             </Flex>
 
-            <Grid columns={{ initial: "1", md: "2", lg: "3" }} gap="8">
+            <Grid columns={{ initial: "1", md: "2", lg: "3" }} gap="6 md:8">
               {[
                 { icon: '🤖', title: 'AI-Powered Generation', desc: 'Advanced AI writes high-quality content based on your answers. No writing experience needed.', color: '#dbeafe' },
                 { icon: '📋', title: 'Smart Questionnaire', desc: 'Answer targeted questions about your topic. Our system guides you through every step.', color: '#e0e7ff', badge: 'Popular' },
@@ -167,19 +167,19 @@ export default function Home() {
         </section>
 
         {/* Interactive Demo Section */}
-        <section className="py-24 bg-gradient-to-b from-white to-blue-50">
+        <section className="py-12 md:py-20 lg:py-24 bg-gradient-to-b from-white to-blue-50">
           <Container size="4">
-            <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+            <Flex direction="column" align="center" gap="4 md:6" className="text-center mb-8 md:mb-16 px-4 md:px-0">
               <Badge size="2" color="blue" highContrast>Live Demo</Badge>
-              <Heading size="8" weight="bold">
+              <Heading size="7" weight="bold" className="text-3xl md:text-4xl">
                 See PothiGPT in Action
               </Heading>
-              <Text size="5" color="gray" className="max-w-2xl">
+              <Text size="4" color="gray" className="max-w-2xl text-base md:text-lg">
                 Experience the power of AI-driven ebook creation
               </Text>
             </Flex>
 
-            <Grid columns={{ initial: "1", md: "3" }} gap="8">
+            <Grid columns={{ initial: "1", md: "3" }} gap="6 md:8">
               {[
                 {
                   title: 'Smart Questionnaire',
@@ -200,11 +200,10 @@ export default function Home() {
                 <Card 
                   key={i}
                   size="4" 
-                  className="hover-lift"
+                  className="hover-lift min-h-[200px] md:min-h-[300px]"
                   style={{
                     background: 'white',
-                    border: '1px solid #e0e7ff',
-                    minHeight: '300px'
+                    border: '1px solid #e0e7ff'
                   }}
                 >
                   <Flex direction="column" gap="4" height="100%">
@@ -228,17 +227,17 @@ export default function Home() {
         </section>
 
         {/* How It Works Section */}
-        <section className="py-24 bg-white" id="how-it-works">
+        <section className="py-12 md:py-20 lg:py-24 bg-white" id="how-it-works">
           <Container size="4">
-            <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+            <Flex direction="column" align="center" gap="4 md:6" className="text-center mb-8 md:mb-16 px-4 md:px-0">
               <Badge size="2" color="blue" variant="soft">Process</Badge>
-              <Heading size="8" weight="bold">How PothiGPT Works</Heading>
-              <Text size="5" color="gray" className="max-w-2xl">
+              <Heading size="7" weight="bold" className="text-3xl md:text-4xl">How PothiGPT Works</Heading>
+              <Text size="4" color="gray" className="max-w-2xl text-base md:text-lg">
                 From idea to published ebook in four simple steps
               </Text>
             </Flex>
 
-            <Grid columns={{ initial: "1", md: "2" }} gap="8">
+            <Grid columns={{ initial: "1", md: "2" }} gap="6 md:8">
               {[
                 { num: 1, title: 'Answer Questions', desc: 'Tell us about your ebook through a simple questionnaire. What is the topic? Who is your audience? What should it cover? Our smart system asks the right questions.' },
                 { num: 2, title: 'AI Generates Content', desc: 'Our AI analyzes your responses and generates professional content. Chapters, sections, and even formatting—all created automatically in minutes.' },
@@ -252,9 +251,9 @@ export default function Home() {
                   className="hover-lift"
                 >
                   <Flex direction="column" gap="4">
-                    <Flex align="center" gap="4">
+                    <Flex align="center" gap="3 md:4">
                       <Box 
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-2xl"
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl md:text-2xl flex-shrink-0"
                         style={{ 
                           background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                           boxShadow: '0 8px 16px rgba(37, 99, 235, 0.3)'
@@ -262,7 +261,7 @@ export default function Home() {
                       >
                         {step.num}
                       </Box>
-                      <Heading size="6" weight="bold">{step.title}</Heading>
+                      <Heading size="5" weight="bold" className="text-xl md:text-2xl">{step.title}</Heading>
                     </Flex>
                     <Text size="4" style={{ color: '#64748b', lineHeight: '1.7' }}>
                       {step.desc}
@@ -275,17 +274,17 @@ export default function Home() {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-24 bg-gradient-to-b from-white to-gray-50" id="testimonials">
+        <section className="py-12 md:py-20 lg:py-24 bg-gradient-to-b from-white to-gray-50" id="testimonials">
           <Container size="4">
-            <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+            <Flex direction="column" align="center" gap="4 md:6" className="text-center mb-8 md:mb-16 px-4 md:px-0">
               <Badge size="2" color="blue" variant="soft">Testimonials</Badge>
-              <Heading size="8" weight="bold">Loved by Creators Worldwide</Heading>
-              <Text size="5" color="gray" className="max-w-2xl">
+              <Heading size="7" weight="bold" className="text-3xl md:text-4xl">Loved by Creators Worldwide</Heading>
+              <Text size="4" color="gray" className="max-w-2xl text-base md:text-lg">
                 See what our users have to say about PothiGPT
               </Text>
             </Flex>
 
-            <Grid columns={{ initial: "1", md: "3" }} gap="8">
+            <Grid columns={{ initial: "1", md: "3" }} gap="6 md:8">
               {[
                 { name: "Sarah Mitchell", role: "Content Creator", quote: "I created my first ebook in under an hour. The AI understood exactly what I wanted, and the editor made it so easy to customize. This is a game-changer!", fallback: "SM", color: "blue" },
                 { name: "James Chen", role: "Small Business Owner", quote: "As someone with zero design experience, I was amazed at how professional my ebook looked. The templates are stunning and so easy to work with.", fallback: "JC", color: "green" },
@@ -321,7 +320,7 @@ export default function Home() {
             </Grid>
 
             {/* Trust Indicators */}
-            <Grid columns={{ initial: "1", md: "3" }} gap="8" mt="16">
+            <Grid columns={{ initial: "1", md: "3" }} gap="6 md:8" mt="8 md:16">
               {[
                 { stat: '10,000+', label: 'Ebooks Created' },
                 { stat: '5,000+', label: 'Happy Users' },
@@ -338,33 +337,33 @@ export default function Home() {
 
         {/* CTA Section */}
         <section 
-          className="py-32 text-white relative overflow-hidden" 
+          className="py-16 md:py-24 lg:py-32 text-white relative overflow-hidden" 
           style={{
             background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)'
           }}
         >
-          <Box className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full opacity-10 blur-3xl" />
-          <Box className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full opacity-10 blur-3xl" />
+          <Box className="hidden md:block absolute top-0 right-0 w-64 md:w-96 md:h-96 bg-white rounded-full opacity-10 blur-3xl" />
+          <Box className="hidden md:block absolute bottom-0 left-0 w-64 md:w-96 md:h-96 bg-white rounded-full opacity-10 blur-3xl" />
           
           <Container size="4" className="relative z-10">
-            <Flex direction="column" align="center" gap="8" className="text-center">
-              <Heading size="9" weight="bold" className="text-white max-w-4xl">
+            <Flex direction="column" align="center" gap="6 md:8" className="text-center px-4 md:px-0">
+              <Heading size="7" weight="bold" className="text-white max-w-4xl text-3xl md:text-5xl">
                 Ready to Create Your First Ebook?
               </Heading>
-              <Text size="6" className="max-w-3xl" style={{ color: '#dbeafe' }}>
+              <Text size="4" className="max-w-3xl text-base md:text-xl" style={{ color: '#dbeafe' }}>
                 Join thousands of creators who trust PothiGPT to bring their ideas to life. No credit card required to start.
               </Text>
               <Button 
-                size="4" 
+                size="3" 
                 variant="solid" 
                 highContrast
                 className="!bg-white !text-blue-700 hover:!bg-blue-50 !cursor-pointer shadow-glow-blue"
                 asChild
-                style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                style={{ paddingLeft: '1.5rem md:2.5rem', paddingRight: '1.5rem md:2.5rem' }}
               >
                 <Link href="/signup">Start Creating Free →</Link>
               </Button>
-              <Flex gap="6" className="mt-2">
+              <Flex direction="column" align="center" className="flex-col sm:flex-row gap-3 sm:gap-6 mt-2">
                 <Text size="2" style={{ color: '#bfdbfe' }}>✓ Free forever</Text>
                 <Text size="2" style={{ color: '#bfdbfe' }}>✓ No credit card needed</Text>
                 <Text size="2" style={{ color: '#bfdbfe' }}>✓ Cancel anytime</Text>
@@ -374,12 +373,12 @@ export default function Home() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-24 bg-gray-50" id="faq">
-          <Container size="3">
-            <Flex direction="column" align="center" gap="6" className="text-center mb-16">
+        <section className="py-12 md:py-20 lg:py-24 bg-gray-50" id="faq">
+          <Container size="3" className="px-4 md:px-0">
+            <Flex direction="column" align="center" gap="4 md:6" className="text-center mb-8 md:mb-16">
               <Badge size="2" color="blue" variant="soft">FAQ</Badge>
-              <Heading size="8" weight="bold">Frequently Asked Questions</Heading>
-              <Text size="5" color="gray">
+              <Heading size="7" weight="bold" className="text-3xl md:text-4xl">Frequently Asked Questions</Heading>
+              <Text size="4" color="gray" className="text-base md:text-lg">
                 Everything you need to know about PothiGPT
               </Text>
             </Flex>
@@ -418,9 +417,9 @@ export default function Home() {
         
         {/* Footer */}
         <Box asChild>
-          <footer className="bg-gray-900 text-white py-16">
+          <footer className="bg-gray-900 text-white py-12 md:py-16">
             <Container size="4">
-              <Grid columns={{ initial: "1", md: "4" }} gap="12" mb="12">
+              <Grid columns={{ initial: "1", md: "4" }} gap="8 md:12" mb="8 md:12">
                 {/* Brand */}
                 <Flex direction="column" gap="4">
                   <Flex align="center" gap="2">
