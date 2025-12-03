@@ -4,7 +4,7 @@
 Prisma cannot locate the Query Engine binary for runtime "rhel-openssl-3.0.x" on Vercel serverless functions when using MongoDB.
 
 ## Root Cause
-The hardcoded `PRISMA_QUERY_ENGINE_LIBRARY` path in `vercel.json` was pointing to a location that doesn't exist at runtime, preventing Prisma from auto-detecting the engine binary.
+Next.js output file tracing doesn't automatically include Prisma binaries in the deployment bundle. Vercel's serverless functions need explicit configuration to include the `.prisma/client` directory.
 
 ## Changes Made
 
@@ -13,7 +13,17 @@ The hardcoded `PRISMA_QUERY_ENGINE_LIBRARY` path in `vercel.json` was pointing t
 - **Removed** `PRISMA_CLIENT_ENGINE_TYPE` (not needed - schema config is sufficient)
 - Prisma will now auto-detect the engine binary from `node_modules/.prisma/client`
 
-### 2. Verified Prisma Schema Configuration
+### 2. Updated `next.config.ts` (CRITICAL FIX)
+Added `outputFileTracingIncludes` to ensure Prisma binaries are included in the deployment:
+```typescript
+outputFileTracingIncludes: {
+  '/api/**/*': ['./node_modules/.prisma/client/**/*'],
+}
+```
+
+This tells Next.js to include all Prisma client files (including the query engine binary) when building for production.
+
+### 3. Verified Prisma Schema Configuration
 Your `prisma/schema.prisma` already has the correct configuration:
 ```prisma
 generator client {
@@ -23,7 +33,7 @@ generator client {
 }
 ```
 
-### 3. Build Process
+### 4. Build Process
 Your `package.json` already has the correct build scripts:
 - `postinstall`: Runs `prisma generate` after npm install
 - `build`: Runs `prisma generate && next build`
@@ -31,12 +41,19 @@ Your `package.json` already has the correct build scripts:
 ## Immediate Solution
 
 After these changes:
-1. **Commit and push** the updated `vercel.json`
+1. **Commit and push** the updated files:
+   ```bash
+   git add next.config.ts vercel.json PRISMA_VERCEL_FIX.md
+   git commit -m "Fix Prisma binary inclusion in Vercel deployment"
+   git push
+   ```
+
 2. **Redeploy** on Vercel
+
 3. The build should:
    - Run `prisma generate` which creates binaries for `rhel-openssl-3.0.x`
-   - Include the binaries in the deployment
-   - Prisma will auto-detect them at runtime
+   - Next.js will include the `.prisma/client` directory in the output (thanks to `outputFileTracingIncludes`)
+   - Prisma will find the binaries at runtime in `/var/task/node_modules/.prisma/client`
 
 ## Recommended Long-term Solution: Prisma Accelerate
 

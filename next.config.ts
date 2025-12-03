@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Include Prisma binaries in the output for Vercel deployment
+  outputFileTracingIncludes: {
+    '/api/**/*': ['./node_modules/.prisma/client/**/*'],
+  },
 };
 
 export default nextConfig;
