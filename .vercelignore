@@ -1,0 +1,5 @@
+# Ensure Prisma binaries are included
+# Don't ignore Prisma client or binaries
+!node_modules/.prisma/**
+!node_modules/@prisma/**
+

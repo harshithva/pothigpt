@@ -9,6 +9,12 @@ const globalForPrisma = globalThis as unknown as {
 // Create Prisma Client with optimized settings for serverless
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  // For MongoDB on serverless, ensure we handle connection properly
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
 })
 
 // Prevent multiple instances of Prisma Client in all environments
@@ -18,10 +24,5 @@ if (process.env.NODE_ENV !== 'production') {
   // In production (Vercel), reuse the same instance
   globalForPrisma.prisma = prisma
 }
-
-// Add connection error handling
-prisma.$connect().catch((error) => {
-  console.error('[PRISMA] Failed to connect to database:', error)
-})
 
 export default prisma
