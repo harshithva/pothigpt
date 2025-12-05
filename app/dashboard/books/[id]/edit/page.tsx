@@ -1,12 +1,38 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { CanvasEditor } from '@/components/editor/CanvasEditor'
 import { Book } from '@/types'
-import { Flex, Text, Button, Box, Badge, Heading } from '@radix-ui/themes'
-import { ArrowLeftIcon, CheckCircledIcon, DownloadIcon } from '@radix-ui/react-icons'
+import { Flex, Text, Button, Box, Badge, Heading, Separator, DropdownMenu, IconButton, Tooltip, TextField, Select } from '@radix-ui/themes'
+import { 
+  ArrowLeftIcon, 
+  CheckCircledIcon, 
+  DownloadIcon, 
+  SpeakerLoudIcon, 
+  ReloadIcon, 
+  PlayIcon, 
+  Cross2Icon,
+  HamburgerMenuIcon,
+  FileTextIcon,
+  StarIcon,
+  Pencil1Icon,
+  ResetIcon,
+  MixIcon,
+  DotsHorizontalIcon,
+  FontBoldIcon,
+  FontItalicIcon,
+  UnderlineIcon,
+  TextAlignLeftIcon,
+  TextAlignCenterIcon,
+  TextAlignRightIcon,
+  TextAlignJustifyIcon,
+  ListBulletIcon,
+  Share1Icon,
+  ZoomInIcon,
+  ZoomOutIcon
+} from '@radix-ui/react-icons'
 import { generatePDF, downloadPDF } from '@/lib/pdf-generator'
 import { generateDOCX, downloadDOCX } from '@/lib/docx-generator'
 
@@ -24,9 +50,49 @@ export default function EditBookPage() {
   const [chapterProgress, setChapterProgress] = useState<Record<number, string>>({})
   type DownloadFormat = 'pdf' | 'docx'
   const [downloadingFormat, setDownloadingFormat] = useState<DownloadFormat | null>(null)
+  const [generatingAudiobook, setGeneratingAudiobook] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const [selectedTextObject, setSelectedTextObject] = useState<any>(null)
+  const [showMagicWrite, setShowMagicWrite] = useState(false)
+  const [fontSize, setFontSize] = useState(16)
+  const [fontFamily, setFontFamily] = useState('Arial')
+  const [textColor, setTextColor] = useState('#000000')
+  const [textAlign, setTextAlign] = useState('left')
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(100)
+
+  // Handler to update text formatting in CanvasEditor
+  const updateTextFormat = (property: string, value: any) => {
+    if (typeof window !== 'undefined' && selectedTextObject) {
+      window.dispatchEvent(new CustomEvent('pothigpt-update-text', {
+        detail: { property, value }
+      }))
+    }
+  }
 
   useEffect(() => {
     fetchBook()
+    
+    // Listen for zoom level changes
+    const handleZoomChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ zoomLevel: number }>
+      setZoomLevel(customEvent.detail.zoomLevel)
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pothigpt-zoom-change', handleZoomChange as EventListener)
+    }
+    
+    // Cleanup: abort any ongoing requests on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pothigpt-zoom-change', handleZoomChange as EventListener)
+      }
+    }
   }, [bookId])
 
   // Auto-start chapter generation when book loads
@@ -81,6 +147,16 @@ export default function EditBookPage() {
     }
   }
 
+  const handleCancelGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setGeneratingChapters(false)
+    setCurrentGeneratingChapter(null)
+    console.log('[Chapter Gen] Generation cancelled by user')
+  }
+
   const startChapterGeneration = async () => {
     if (!book || !book.content) return
     
@@ -102,11 +178,21 @@ export default function EditBookPage() {
       return
     }
 
+    // Create new AbortController for this generation session
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
     setGeneratingChapters(true)
     console.log(`[Chapter Gen] Starting generation of ${pendingChapters.length} chapters`)
 
     // Generate chapters sequentially
     for (const chapter of pendingChapters) {
+      // Check if cancelled
+      if (signal.aborted) {
+        console.log('[Chapter Gen] Generation cancelled')
+        break
+      }
+
       try {
         console.log(`[Chapter Gen] Generating Chapter ${chapter.number}: ${chapter.title}`)
         setCurrentGeneratingChapter(chapter.number)
@@ -116,7 +202,13 @@ export default function EditBookPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chapterNumber: chapter.number }),
+          signal,
         })
+
+        if (signal.aborted) {
+          console.log('[Chapter Gen] Request was aborted')
+          break
+        }
 
         if (response.ok) {
           const result = await response.json()
@@ -129,7 +221,11 @@ export default function EditBookPage() {
           console.error(`[Chapter Gen] Failed to generate Chapter ${chapter.number}`)
           setChapterProgress(prev => ({ ...prev, [chapter.number]: 'error' }))
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log('[Chapter Gen] Request was aborted')
+          break
+        }
         console.error(`[Chapter Gen] Error generating Chapter ${chapter.number}:`, error)
         setChapterProgress(prev => ({ ...prev, [chapter.number]: 'error' }))
       }
@@ -137,7 +233,8 @@ export default function EditBookPage() {
 
     setGeneratingChapters(false)
     setCurrentGeneratingChapter(null)
-    console.log('[Chapter Gen] All chapters generated!')
+    abortControllerRef.current = null
+    console.log('[Chapter Gen] Generation process finished')
   }
 
   const getSafeFileName = (title: string, extension: 'pdf' | 'docx') => {
@@ -145,6 +242,35 @@ export default function EditBookPage() {
       ? title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       : 'book'
     return `${safeTitle || 'book'}.${extension}`
+  }
+
+  const handleGenerateAudiobook = async () => {
+    if (!book) return
+
+    setGeneratingAudiobook(true)
+    try {
+      const response = await fetch(`/api/books/${bookId}/generate-audiobook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to generate audiobook')
+      }
+
+      const data = await response.json()
+      
+      // Refresh book data
+      await fetchBook()
+      
+      alert('Audiobook generation started! This may take several minutes.')
+    } catch (error) {
+      console.error('Error generating audiobook:', error)
+      alert(error instanceof Error ? error.message : 'Failed to generate audiobook')
+    } finally {
+      setGeneratingAudiobook(false)
+    }
   }
 
   const handleDownload = async (format: DownloadFormat) => {
@@ -205,7 +331,7 @@ export default function EditBookPage() {
   if (loading) {
     return (
       <Flex align="center" justify="center" className="min-h-screen">
-        <Text size="6" weight="bold" style={{ color: '#1e293b' }}>Loading editor...</Text>
+        <Text size="4" weight="bold" className="text-base md:text-xl" style={{ color: '#1e293b' }}>Loading editor...</Text>
       </Flex>
     )
   }
@@ -213,101 +339,535 @@ export default function EditBookPage() {
   if (!book) {
     return (
       <Flex align="center" justify="center" className="min-h-screen">
-        <Text size="6" weight="bold" style={{ color: '#1e293b' }}>Book not found</Text>
+        <Text size="4" weight="bold" className="text-base md:text-xl" style={{ color: '#1e293b' }}>Book not found</Text>
       </Flex>
     )
   }
 
   return (
-    <Box className="pb-6">
-      <Flex justify="between" align="center" px="4" py="3" className="mb-4" gap="4">
-        <Button
+    <Box className="pb-4 sm:pb-6">
+      {/* Enhanced Canva-Style Toolbar */}
+      <Box
+        style={{
+          height: '64px',
+          background: 'linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%)',
+          borderBottom: '1px solid rgba(226, 232, 240, 0.9)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          width: '100%',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
+        <Flex
+          align="center"
+          justify="between"
+          height="100%"
+          px={{ initial: '2', sm: '3', md: '4' }}
+          gap="2"
+          style={{ width: '100%', minWidth: 0 }}
+        >
+          {/* Left Section */}
+          <Flex align="center" gap="1" style={{ flexShrink: 0 }} className="overflow-x-auto">
+            <Tooltip content="Menu">
+              <IconButton
           size="2"
           variant="ghost"
+                className="!cursor-pointer flex-shrink-0"
           onClick={() => router.push('/dashboard/books')}
-          className="!cursor-pointer !font-medium !justify-start !w-fit"
-          style={{ color: '#64748b' }}
-        >
-          <Flex align="center" gap="2">
-            <ArrowLeftIcon width="14" height="14" />
-            <Text>Back to Books</Text>
+              >
+                <HamburgerMenuIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button size="2" variant="ghost" className="!cursor-pointer flex-shrink-0">
+                  <FileTextIcon width="16" height="16" />
+                  <Text size="2" className="hidden md:inline ml-1">File</Text>
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Item onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-save'))
+                  }
+                }}>
+                  <Text>Save</Text>
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator />
+                <DropdownMenu.Item onClick={() => handleDownload('pdf')}>
+                  <Text>Export as PDF</Text>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onClick={() => handleDownload('docx')}>
+                  <Text>Export as DOCX</Text>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+
+            <Tooltip content="Magic Switch">
+              <IconButton size="2" variant="ghost" className="!cursor-pointer flex-shrink-0 hidden sm:flex">
+                <StarIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button size="2" variant="ghost" className="!cursor-pointer flex-shrink-0 hidden sm:flex">
+                  <Pencil1Icon width="16" height="16" />
+                  <Text size="2" className="hidden md:inline ml-1">Editing</Text>
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content>
+                <DropdownMenu.Item>
+                  <Text>Edit Mode</Text>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item>
+                  <Text>View Mode</Text>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+
+            <Separator orientation="vertical" size="2" className="hidden md:block" />
+
+            <Tooltip content="Undo (⌘Z)">
+              <IconButton 
+                size="2" 
+                variant={canUndo ? "soft" : "ghost"}
+                color={canUndo ? "blue" : "gray"}
+                className="!cursor-pointer flex-shrink-0"
+                disabled={!canUndo}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-undo'))
+                  }
+                }}
+                style={{
+                  opacity: canUndo ? 1 : 0.5,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <ResetIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip content="Redo (⌘⇧Z)">
+              <IconButton 
+                size="2" 
+                variant={canRedo ? "soft" : "ghost"}
+                color={canRedo ? "blue" : "gray"}
+                className="!cursor-pointer flex-shrink-0"
+                disabled={!canRedo}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-redo'))
+                  }
+                }}
+                style={{
+                  opacity: canRedo ? 1 : 0.5,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <MixIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <Separator orientation="vertical" size="2" className="hidden md:block" />
+
+            <Tooltip content="Zoom Out">
+              <IconButton 
+                size="2" 
+                variant="soft" 
+                color="gray"
+                className="!cursor-pointer flex-shrink-0"
+                disabled={zoomLevel <= 25}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-zoom-out'))
+                  }
+                }}
+                style={{
+                  opacity: zoomLevel <= 25 ? 0.5 : 1
+                }}
+              >
+                <ZoomOutIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip content={`Zoom: ${zoomLevel}%`}>
+              <Button 
+                size="2" 
+                variant="soft" 
+                color="gray"
+                className="!cursor-pointer flex-shrink-0 !px-3"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-zoom-reset'))
+                  }
+                }}
+              >
+                <Text size="1" className="text-xs font-semibold">{zoomLevel}%</Text>
+              </Button>
+            </Tooltip>
+
+            <Tooltip content="Zoom In">
+              <IconButton 
+                size="2" 
+                variant="soft" 
+                color="gray"
+                className="!cursor-pointer flex-shrink-0"
+                disabled={zoomLevel >= 200}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-zoom-in'))
+                  }
+                }}
+                style={{
+                  opacity: zoomLevel >= 200 ? 0.5 : 1
+                }}
+              >
+                <ZoomInIcon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
+
+            <Separator orientation="vertical" size="2" className="hidden md:block" />
+
+            <Tooltip content={saving ? 'Saving...' : 'Saved'}>
+              <IconButton size="2" variant="ghost" className="!cursor-pointer flex-shrink-0">
+                {saving ? (
+                  <ReloadIcon width="16" height="16" className="animate-spin" style={{ color: '#3b82f6' }} />
+                ) : (
+                  <CheckCircledIcon width="16" height="16" style={{ color: '#10b981' }} />
+                )}
+              </IconButton>
+            </Tooltip>
           </Flex>
+
+          {/* Center Section - Text Formatting (only when text is selected) */}
+          {selectedTextObject && (
+            <Flex align="center" gap="1" style={{ flex: '1 1 auto', justifyContent: 'center', minWidth: 0 }} className="hidden md:flex">
+              <Button 
+                size="2" 
+                variant="soft" 
+                color="purple" 
+                className="!cursor-pointer"
+                onClick={() => setShowMagicWrite(true)}
+              >
+                <StarIcon width="14" height="14" />
+                <Text size="1" className="hidden lg:inline ml-1">Magic Write</Text>
+              </Button>
+
+              <Separator orientation="vertical" size="2" />
+
+              <Button size="2" variant="soft" className="!cursor-pointer">
+                <Text size="1" weight="bold">H1</Text>
+              </Button>
+              <Button size="2" variant="soft" className="!cursor-pointer">
+                <Text size="1" weight="bold">H2</Text>
         </Button>
 
-        <Flex align="center" gap="4" style={{ flex: 1, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <Flex direction="column" align="end" gap="1" className="text-right">
-            <Heading size="6" weight="bold" style={{ color: '#1e293b' }}>
+              <Select.Root 
+                value={fontFamily} 
+                onValueChange={(value) => {
+                  setFontFamily(value)
+                  updateTextFormat('fontFamily', value)
+                }}
+              >
+                <Select.Trigger size="2" variant="soft" style={{ minWidth: '100px' }} />
+                <Select.Content>
+                  <Select.Item value="Arial">Arial</Select.Item>
+                  <Select.Item value="Times New Roman">Times New Roman</Select.Item>
+                  <Select.Item value="Georgia">Georgia</Select.Item>
+                  <Select.Item value="Helvetica">Helvetica</Select.Item>
+                  <Select.Item value="Courier New">Courier New</Select.Item>
+                  <Select.Item value="Verdana">Verdana</Select.Item>
+                </Select.Content>
+              </Select.Root>
+
+              <Flex align="center" gap="0" style={{ border: '1px solid #e0e7ff', borderRadius: '6px' }}>
+                <IconButton 
+                  size="2" 
+                  variant="ghost" 
+                  onClick={() => {
+                    const newSize = Math.max(8, fontSize - 1)
+                    setFontSize(newSize)
+                    updateTextFormat('fontSize', newSize)
+                  }}
+                >
+                  <Text size="1">−</Text>
+                </IconButton>
+                <TextField.Root
+                  size="2"
+                  value={String(fontSize)}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value) || 16
+                    setFontSize(newSize)
+                    updateTextFormat('fontSize', newSize)
+                  }}
+                  style={{ width: '50px', textAlign: 'center' }}
+                />
+                <IconButton 
+                  size="2" 
+                  variant="ghost" 
+                  onClick={() => {
+                    const newSize = Math.min(144, fontSize + 1)
+                    setFontSize(newSize)
+                    updateTextFormat('fontSize', newSize)
+                  }}
+                >
+                  <Text size="1">+</Text>
+                </IconButton>
+              </Flex>
+
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => {
+                  setTextColor(e.target.value)
+                  updateTextFormat('textColor', e.target.value)
+                }}
+                style={{ width: '32px', height: '32px', border: '1px solid #e0e7ff', borderRadius: '6px', cursor: 'pointer' }}
+              />
+
+              <Separator orientation="vertical" size="2" />
+
+              <IconButton 
+                size="2" 
+                variant={selectedTextObject?.fontWeight === 'bold' ? 'solid' : 'soft'} 
+                className="!cursor-pointer"
+                onClick={() => updateTextFormat('fontWeight', selectedTextObject?.fontWeight === 'bold' ? 'normal' : 'bold')}
+              >
+                <FontBoldIcon width="16" height="16" />
+              </IconButton>
+              <IconButton 
+                size="2" 
+                variant={selectedTextObject?.fontStyle === 'italic' ? 'solid' : 'soft'} 
+                className="!cursor-pointer"
+                onClick={() => updateTextFormat('fontStyle', selectedTextObject?.fontStyle === 'italic' ? 'normal' : 'italic')}
+              >
+                <FontItalicIcon width="16" height="16" />
+              </IconButton>
+              <IconButton 
+                size="2" 
+                variant={selectedTextObject?.underline ? 'solid' : 'soft'} 
+                className="!cursor-pointer"
+                onClick={() => updateTextFormat('underline', !selectedTextObject?.underline)}
+              >
+                <UnderlineIcon width="16" height="16" />
+              </IconButton>
+
+              <Separator orientation="vertical" size="2" />
+
+              <IconButton 
+                size="2" 
+                variant={textAlign === 'left' ? 'solid' : 'soft'} 
+                onClick={() => {
+                  setTextAlign('left')
+                  updateTextFormat('textAlign', 'left')
+                }} 
+                className="!cursor-pointer"
+              >
+                <TextAlignLeftIcon width="16" height="16" />
+              </IconButton>
+              <IconButton 
+                size="2" 
+                variant={textAlign === 'center' ? 'solid' : 'soft'} 
+                onClick={() => {
+                  setTextAlign('center')
+                  updateTextFormat('textAlign', 'center')
+                }} 
+                className="!cursor-pointer"
+              >
+                <TextAlignCenterIcon width="16" height="16" />
+              </IconButton>
+              <IconButton 
+                size="2" 
+                variant={textAlign === 'right' ? 'solid' : 'soft'} 
+                onClick={() => {
+                  setTextAlign('right')
+                  updateTextFormat('textAlign', 'right')
+                }} 
+                className="!cursor-pointer"
+              >
+                <TextAlignRightIcon width="16" height="16" />
+              </IconButton>
+              <IconButton 
+                size="2" 
+                variant={textAlign === 'justify' ? 'solid' : 'soft'} 
+                onClick={() => {
+                  setTextAlign('justify')
+                  updateTextFormat('textAlign', 'justify')
+                }} 
+                className="!cursor-pointer"
+              >
+                <TextAlignJustifyIcon width="16" height="16" />
+              </IconButton>
+
+              <IconButton size="2" variant="soft" className="!cursor-pointer">
+                <ListBulletIcon width="16" height="16" />
+              </IconButton>
+
+              <IconButton size="2" variant="soft" className="!cursor-pointer">
+                <DotsHorizontalIcon width="16" height="16" />
+              </IconButton>
+            </Flex>
+          )}
+
+          {/* Right Section */}
+          <Flex align="center" gap="2" style={{ flexShrink: 0 }} className="overflow-x-auto">
+            <Heading size="3" weight="bold" style={{ color: '#1e293b' }} className="hidden xl:block truncate max-w-xs">
               {book.title}
             </Heading>
-            {saving && (
-              <Badge size="2" color="blue" variant="soft" highContrast>
-                <Flex align="center" gap="2" className="animate-pulse">
-                  <CheckCircledIcon width="14" height="14" />
-                  <Text weight="bold">Saving...</Text>
-                </Flex>
-              </Badge>
-            )}
-          </Flex>
 
-          <Flex align="center" gap="2" style={{ flexShrink: 0 }}>
             <Button
-              size="3"
+              size="2"
               color="blue"
               variant="solid"
               disabled={downloadingFormat !== null}
               onClick={() => handleDownload('pdf')}
-              className="!cursor-pointer"
+              className="!cursor-pointer flex-shrink-0"
             >
-              <Flex align="center" gap="2">
-                <DownloadIcon width="16" height="16" />
-                <Text>{downloadingFormat === 'pdf' ? 'Downloading...' : 'Download PDF'}</Text>
-              </Flex>
+              <DownloadIcon width="14" height="14" />
+              <Text size="2" className="hidden md:inline ml-1 text-xs">
+                {downloadingFormat === 'pdf' ? 'Downloading...' : 'PDF'}
+              </Text>
             </Button>
+
             <Button
-              size="3"
+              size="2"
               color="green"
               variant="solid"
               disabled={downloadingFormat !== null}
               onClick={() => handleDownload('docx')}
-              className="!cursor-pointer"
+              className="!cursor-pointer flex-shrink-0"
             >
-              <Flex align="center" gap="2">
-                <DownloadIcon width="16" height="16" />
-                <Text>{downloadingFormat === 'docx' ? 'Downloading...' : 'Download DOCX'}</Text>
-              </Flex>
+              <DownloadIcon width="14" height="14" />
+              <Text size="2" className="hidden md:inline ml-1 text-xs">
+                {downloadingFormat === 'docx' ? 'Downloading...' : 'DOCX'}
+              </Text>
             </Button>
+
+            <Tooltip content="Share">
+              <IconButton size="2" variant="soft" className="!cursor-pointer flex-shrink-0 hidden sm:flex">
+                <Share1Icon width="16" height="16" />
+              </IconButton>
+            </Tooltip>
           </Flex>
         </Flex>
+      </Box>
+
+      {/* Magic Write Modal */}
+      {showMagicWrite && (
+        <Box
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setShowMagicWrite(false)}
+        >
+          <Box
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '24px',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflow: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Flex direction="column" gap="4">
+              <Flex justify="between" align="center">
+                <Heading size="4" weight="bold">Magic Write</Heading>
+                <IconButton size="2" variant="ghost" onClick={() => setShowMagicWrite(false)}>
+                  <Cross2Icon width="16" height="16" />
+                </IconButton>
+              </Flex>
+              <Text size="2" style={{ color: '#64748b' }}>
+                Enter a prompt to generate text with AI
+              </Text>
+              <Box asChild>
+                <textarea
+                  placeholder="E.g., Write a paragraph about..."
+                  style={{
+                    width: '100%',
+                    minHeight: '100px',
+                    padding: '12px',
+                    border: '1px solid #e0e7ff',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical'
+                  }}
+                />
+              </Box>
+              <Flex gap="2" justify="end">
+                <Button size="2" variant="soft" onClick={() => setShowMagicWrite(false)}>
+                  Cancel
+                </Button>
+                <Button size="2" variant="solid" color="purple">
+                  Generate
+                </Button>
+        </Flex>
       </Flex>
+          </Box>
+        </Box>
+      )}
 
       {/* Chapter Generation Progress Banner */}
       {generatingChapters && currentGeneratingChapter && (
         <Box 
-          className="mb-6 mx-4"
+          className="mb-2 sm:mb-3 mx-2 sm:mx-4 md:mx-6 max-w-4xl mx-auto"
           style={{
             background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-            border: '2px solid #3b82f6',
-            borderRadius: '12px',
-            padding: '1rem 1.5rem'
+            border: '1px solid #3b82f6',
+            borderRadius: '8px',
+            padding: '0.5rem 0.75rem'
           }}
         >
-          <Flex direction="column" gap="3">
-            <Flex justify="between" align="center">
-              <Flex align="center" gap="3">
-                <div className="animate-spin" style={{ width: '20px', height: '20px', border: '3px solid #3b82f6', borderTop: '3px solid transparent', borderRadius: '50%' }} />
-                <Text size="4" weight="bold" style={{ color: '#1e40af' }}>
+          <Flex direction="column" gap="2">
+            <Flex 
+              direction={{ initial: 'column', sm: 'row' }}
+              justify="between" 
+              align={{ initial: 'start', sm: 'center' }}
+              gap="2"
+            >
+              <Flex align="center" gap="2">
+                <div className="animate-spin" style={{ width: '14px', height: '14px', border: '2px solid #3b82f6', borderTop: '2px solid transparent', borderRadius: '50%' }} />
+                <Text size={{ initial: '2', sm: '3' }} weight="bold" className="text-xs sm:text-sm" style={{ color: '#1e40af' }}>
                   Generating Chapter {currentGeneratingChapter}
                 </Text>
               </Flex>
-              <Badge size="2" color="blue" variant="solid">
+              <Flex align="center" gap="2">
+                <Badge size="1" color="blue" variant="soft" className="text-xs">
                 AI Writing
               </Badge>
+                <Button
+                  size="1"
+                  variant="ghost"
+                  color="red"
+                  onClick={handleCancelGeneration}
+                  className="!cursor-pointer"
+                >
+                  <Cross2Icon width="12" height="12" />
+                </Button>
+              </Flex>
             </Flex>
-            <Text size="2" style={{ color: '#1e40af' }}>
+            <Text size="1" className="text-xs hidden sm:block" style={{ color: '#1e40af' }}>
               The AI is progressively creating each chapter with context from previous chapters. This may take a minute per chapter.
             </Text>
             {/* Chapter status indicators */}
-            <Flex gap="2" wrap="wrap">
+            <Flex gap="1" wrap="wrap">
               {(book.content as any)?.outline?.chapters?.map((ch: any) => (
                 <Badge 
                   key={ch.number}
@@ -318,6 +878,7 @@ export default function EditBookPage() {
                     chapterProgress[ch.number] === 'error' ? 'red' : 'gray'
                   }
                   variant={chapterProgress[ch.number] === 'generating' ? 'solid' : 'soft'}
+                  className="text-xs"
                 >
                   Ch {ch.number}: {
                     chapterProgress[ch.number] === 'completed' ? '✓' :
@@ -331,8 +892,137 @@ export default function EditBookPage() {
         </Box>
       )}
 
+      {/* Audiobook Section */}
+      <Box 
+        className="mb-4 sm:mb-6 mx-2 sm:mx-4 md:mx-6"
+        style={{
+          background: 'white',
+          border: '1px solid #e0e7ff',
+          borderRadius: '12px',
+        }}
+        p={{ initial: '3', sm: '4', md: '6' }}
+      >
+        <Flex direction="column" gap={{ initial: '3', sm: '4' }}>
+          <Flex 
+            direction={{ initial: 'column', sm: 'row' }}
+            justify="between" 
+            align={{ initial: 'start', sm: 'center' }}
+            gap={{ initial: '2', sm: '3' }}
+          >
+            <Flex align="center" gap={{ initial: '2', sm: '3' }}>
+              <SpeakerLoudIcon width="20" height="20" className="sm:w-6 sm:h-6" color="#3b82f6" />
+              <Heading size="4" weight="bold" className="text-lg sm:text-xl" style={{ color: '#1e293b' }}>
+                Audiobook
+              </Heading>
+            </Flex>
+            {book.audiobookStatus && (
+              <Badge 
+                color={
+                  book.audiobookStatus === 'COMPLETED' ? 'green' :
+                  book.audiobookStatus === 'PROCESSING' ? 'yellow' :
+                  book.audiobookStatus === 'FAILED' ? 'red' : 'gray'
+                }
+                variant="soft"
+                size="1"
+                className="text-xs sm:text-sm"
+              >
+                {book.audiobookStatus}
+              </Badge>
+            )}
+          </Flex>
+
+          {book.audiobookStatus === 'COMPLETED' && book.audiobookUrl ? (
+            <Flex direction="column" gap={{ initial: '2', sm: '3' }}>
+              <Text size="2" className="text-xs sm:text-sm" style={{ color: '#64748b' }}>
+                Your audiobook is ready! Listen to it below or download it.
+              </Text>
+              <Flex direction={{ initial: 'column', sm: 'row' }} gap={{ initial: '2', sm: '3' }} align={{ initial: 'stretch', sm: 'center' }}>
+                <audio controls className="w-full sm:flex-1" style={{ maxWidth: '100%' }}>
+                  <source src={book.audiobookUrl} type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
+                <Button
+                  size="2"
+                  variant="solid"
+                  color="blue"
+                  onClick={() => {
+                    const link = document.createElement('a')
+                    link.href = book.audiobookUrl!
+                    link.download = `${book.title.replace(/\s+/g, '-')}-audiobook.mp3`
+                    link.click()
+                  }}
+                  className="!cursor-pointer w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  <Flex align="center" gap="2">
+                    <DownloadIcon width="16" height="16" />
+                    <Text size="2" className="text-xs sm:text-sm">Download Audiobook</Text>
+                  </Flex>
+                </Button>
+              </Flex>
+            </Flex>
+          ) : book.audiobookStatus === 'PROCESSING' ? (
+            <Flex direction="column" gap={{ initial: '2', sm: '3' }}>
+              <Flex align="center" gap={{ initial: '2', sm: '3' }}>
+                <div className="animate-spin" style={{ width: '18px', height: '18px', border: '3px solid #3b82f6', borderTop: '3px solid transparent', borderRadius: '50%' }} />
+                <Text size="2" weight="bold" className="text-xs sm:text-sm" style={{ color: '#1e40af' }}>
+                  Generating audiobook...
+                </Text>
+              </Flex>
+              <Text size="1" className="text-xs" style={{ color: '#64748b' }}>
+                This may take several minutes depending on the length of your book. Please wait.
+              </Text>
+            </Flex>
+          ) : book.audiobookStatus === 'FAILED' ? (
+            <Flex direction="column" gap={{ initial: '2', sm: '3' }}>
+              <Text size="2" className="text-xs sm:text-sm" style={{ color: '#dc2626' }}>
+                Audiobook generation failed. Please try again.
+              </Text>
+              <Button
+                size="2"
+                variant="solid"
+                color="blue"
+                onClick={handleGenerateAudiobook}
+                disabled={generatingAudiobook}
+                className="!cursor-pointer w-full sm:w-fit text-xs sm:text-sm"
+              >
+                <Flex align="center" gap="2">
+                  <ReloadIcon width="16" height="16" />
+                  <Text size="2" className="text-xs sm:text-sm">Retry Generation</Text>
+                </Flex>
+              </Button>
+            </Flex>
+          ) : (
+            <Flex direction="column" gap={{ initial: '2', sm: '3' }}>
+              <Text size="2" className="text-xs sm:text-sm" style={{ color: '#64748b' }}>
+                Convert your book to an audiobook using AI-powered text-to-speech. This will extract text from your PDF or book content and generate a high-quality audio narration.
+              </Text>
+              <Button
+                size="2"
+                variant="solid"
+                color="blue"
+                onClick={handleGenerateAudiobook}
+                disabled={generatingAudiobook}
+                className="!cursor-pointer w-full sm:w-fit text-xs sm:text-sm"
+              >
+                {generatingAudiobook ? (
+                  <Flex align="center" gap="2">
+                    <ReloadIcon className="animate-spin" width="16" height="16" />
+                    <Text size="2" className="text-xs sm:text-sm">Generating...</Text>
+                  </Flex>
+                ) : (
+                  <Flex align="center" gap="2">
+                    <PlayIcon width="16" height="16" />
+                    <Text size="2" className="text-xs sm:text-sm">Generate Audiobook</Text>
+                  </Flex>
+                )}
+              </Button>
+            </Flex>
+          )}
+        </Flex>
+      </Box>
+
       {/* Editor */}
-      <Box px="4">
+      <Box px={{ initial: '2', sm: '4', md: '6' }}>
         <CanvasEditor
           initialContent={book.content}
           onSave={handleSave}
@@ -343,6 +1033,19 @@ export default function EditBookPage() {
           currentGeneratingChapter={currentGeneratingChapter}
           chapterProgress={chapterProgress}
           chapters={(book.content as any)?.outline?.chapters || []}
+          onSelectionChange={(obj) => {
+            setSelectedTextObject(obj)
+            if (obj && obj.type === 'textbox') {
+              setFontSize((obj as any).fontSize || 16)
+              setFontFamily((obj as any).fontFamily || 'Arial')
+              setTextColor(((obj as any).fill as string) || '#000000')
+              setTextAlign((obj as any).textAlign || 'left')
+            }
+          }}
+          onUndoRedoChange={(canUndoValue, canRedoValue) => {
+            setCanUndo(canUndoValue)
+            setCanRedo(canRedoValue)
+          }}
         />
       </Box>
     </Box>

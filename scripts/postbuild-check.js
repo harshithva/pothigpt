@@ -36,3 +36,4 @@ if (fs.existsSync(binaryPath)) {
 
 console.log('✅ Post-build check complete');
 
+

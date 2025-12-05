@@ -49,6 +49,8 @@ model Book {
   content         Json            // Canvas editor state (Fabric.js JSON)
   coverImage      String?
   status          BookStatus      @default(DRAFT)
+  audiobookUrl    String?
+  audiobookStatus AudiobookStatus?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -58,4 +60,11 @@ model Book {
 enum BookStatus {
   DRAFT
   PUBLISHED
+}
+
+enum AudiobookStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

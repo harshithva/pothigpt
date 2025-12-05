@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/**/*': ['./node_modules/.prisma/client/**/*'],
   },
+  // Handle CommonJS modules like pdf-parse
+  serverExternalPackages: ['pdf-parse'],
 };
 
 export default nextConfig;

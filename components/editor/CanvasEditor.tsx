@@ -36,6 +36,8 @@ interface CanvasEditorProps {
   currentGeneratingChapter?: number | null
   chapterProgress?: Record<number, string>
   chapters?: any[]
+  onSelectionChange?: (selectedObject: any) => void
+  onUndoRedoChange?: (canUndo: boolean, canRedo: boolean) => void
 }
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
@@ -48,6 +50,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   currentGeneratingChapter = null,
   chapterProgress = {},
   chapters = [],
+  onSelectionChange,
+  onUndoRedoChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null)
@@ -72,6 +76,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   const [textColor, setTextColor] = useState('#000000')
   const [textAlign, setTextAlign] = useState('left')
   const [pagePreviews, setPagePreviews] = useState<Record<string, string>>({})
+  const [zoomLevel, setZoomLevel] = useState(100)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+
+  // Sync formatting state when text object is selected
+  useEffect(() => {
+    if (selectedObject && selectedObject.type === 'textbox') {
+      const text = selectedObject as fabric.Textbox
+      setFontSize(text.fontSize || 16)
+      setFontFamily(text.fontFamily || 'Arial')
+      setTextColor((text.fill as string) || '#000000')
+      setTextAlign(text.textAlign || 'left')
+    }
+  }, [selectedObject])
 
   // Helper function to generate page preview thumbnail
   const generatePagePreview = useCallback((pageData: any, pageId: string): void => {
@@ -133,6 +151,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       height: 842, // A4 height in pixels
       backgroundColor: '#ffffff',
     })
+
+        // Initialize zoom level
+        fabricCanvas.setZoom(1)
+        setZoomLevel(100)
 
     // Wait for canvas to be fully initialized
     const initializeCanvas = () => {
@@ -200,15 +222,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
 
       // Selection handlers
       fabricCanvas.on('selection:created', (e) => {
-        setSelectedObject(e.selected?.[0] || null)
+        const obj = e.selected?.[0] || null
+        setSelectedObject(obj)
+        onSelectionChange?.(obj)
       })
 
       fabricCanvas.on('selection:updated', (e) => {
-        setSelectedObject(e.selected?.[0] || null)
+        const obj = e.selected?.[0] || null
+        setSelectedObject(obj)
+        onSelectionChange?.(obj)
       })
 
       fabricCanvas.on('selection:cleared', () => {
         setSelectedObject(null)
+        onSelectionChange?.(null)
       })
 
       // Initialize history with current canvas state
@@ -246,6 +273,11 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           // Update step ref and state in sync
           historyStepRef.current = newStep
           setHistoryStep(newStep)
+
+          // Update undo/redo state
+          setCanUndo(newStep > 0)
+          setCanRedo(false)
+          onUndoRedoChange?.(newStep > 0, false)
 
           return newHistory
         })
@@ -373,6 +405,34 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     }
   }, [currentPage, canvas, isInitialized, pages])
 
+  // Zoom functions - defined early to avoid initialization errors
+  const handleZoomIn = useCallback(() => {
+    if (!canvas) return
+    setZoomLevel(prev => {
+      const newZoom = Math.min(prev + 10, 200)
+      canvas.setZoom(newZoom / 100)
+      canvas.renderAll()
+      return newZoom
+    })
+  }, [canvas])
+
+  const handleZoomOut = useCallback(() => {
+    if (!canvas) return
+    setZoomLevel(prev => {
+      const newZoom = Math.max(prev - 10, 25)
+      canvas.setZoom(newZoom / 100)
+      canvas.renderAll()
+      return newZoom
+    })
+  }, [canvas])
+
+  const handleZoomReset = useCallback(() => {
+    if (!canvas) return
+    setZoomLevel(100)
+    canvas.setZoom(1)
+    canvas.renderAll()
+  }, [canvas])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -381,14 +441,20 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           case 'z':
             e.preventDefault()
             if (e.shiftKey) {
-              redo()
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('pothigpt-redo'))
+              }
             } else {
-              undo()
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('pothigpt-undo'))
+              }
             }
             break
           case 'y':
             e.preventDefault()
-            redo()
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('pothigpt-redo'))
+            }
             break
           case 's':
             e.preventDefault()
@@ -422,8 +488,140 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     }
 
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedObject, historyStep])
+
+    // Listen for toolbar formatting updates
+    const handleTextUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent<{ property: string; value: any }>
+      const { property, value } = customEvent.detail
+      
+      if (!canvas || !selectedObject || selectedObject.type !== 'textbox') return
+      
+      const text = selectedObject as fabric.Textbox
+      
+      switch (property) {
+        case 'fontSize':
+          changeFontSize(value)
+          break
+        case 'fontFamily':
+          changeFontFamily(value)
+          break
+        case 'fill':
+        case 'textColor':
+          changeTextColor(value)
+          break
+        case 'textAlign':
+          changeTextAlign(value)
+          break
+        case 'fontWeight':
+          text.set('fontWeight', value)
+          canvas.renderAll()
+          saveHistory()
+          break
+        case 'fontStyle':
+          text.set('fontStyle', value)
+          canvas.renderAll()
+          saveHistory()
+          break
+        case 'underline':
+          text.set('underline', value)
+          canvas.renderAll()
+          saveHistory()
+          break
+      }
+    }
+
+    const handleSave = () => {
+      savePage()
+    }
+
+    const handleUndo = () => {
+      if (!canvas || historyStep <= 0 || !history || history.length === 0) return
+
+      const newStep = historyStep - 1
+      const previousState = history[newStep]
+
+      if (previousState) {
+        canvas.loadFromJSON(previousState, () => {
+          canvas.renderAll()
+          setHistoryStep(newStep)
+
+          const activeObject = canvas.getActiveObject()
+          setSelectedObject(activeObject || null)
+
+          if (typeof window !== 'undefined' && (window as any).historyStepRef) {
+            (window as any).historyStepRef.current = newStep
+          }
+
+          setCanUndo(newStep > 0)
+          setCanRedo(newStep < history.length - 1)
+          onUndoRedoChange?.(newStep > 0, newStep < history.length - 1)
+        })
+      }
+    }
+
+    const handleRedo = () => {
+      if (!canvas || historyStep >= history.length - 1 || !history || history.length === 0) return
+
+      const newStep = historyStep + 1
+      const nextState = history[newStep]
+
+      if (nextState) {
+        canvas.loadFromJSON(nextState, () => {
+          canvas.renderAll()
+          setHistoryStep(newStep)
+
+          const activeObject = canvas.getActiveObject()
+          setSelectedObject(activeObject || null)
+
+          if (typeof window !== 'undefined' && (window as any).historyStepRef) {
+            (window as any).historyStepRef.current = newStep
+          }
+
+          setCanUndo(newStep > 0)
+          setCanRedo(newStep < history.length - 1)
+          onUndoRedoChange?.(newStep > 0, newStep < history.length - 1)
+        })
+      }
+    }
+
+    const handleZoomInEvent = () => {
+      handleZoomIn()
+    }
+
+    const handleZoomOutEvent = () => {
+      handleZoomOut()
+    }
+
+    const handleZoomResetEvent = () => {
+      handleZoomReset()
+    }
+
+    const handleZoomChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ zoomLevel: number }>
+      // This is handled by the useEffect above
+    }
+
+    window.addEventListener('pothigpt-update-text', handleTextUpdate as EventListener)
+    window.addEventListener('pothigpt-save', handleSave)
+    window.addEventListener('pothigpt-undo', handleUndo)
+    window.addEventListener('pothigpt-redo', handleRedo)
+    window.addEventListener('pothigpt-zoom-in', handleZoomInEvent)
+    window.addEventListener('pothigpt-zoom-out', handleZoomOutEvent)
+    window.addEventListener('pothigpt-zoom-reset', handleZoomResetEvent)
+    window.addEventListener('pothigpt-zoom-change', handleZoomChange as EventListener)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('pothigpt-update-text', handleTextUpdate as EventListener)
+      window.removeEventListener('pothigpt-save', handleSave)
+      window.removeEventListener('pothigpt-undo', handleUndo)
+      window.removeEventListener('pothigpt-redo', handleRedo)
+      window.removeEventListener('pothigpt-zoom-in', handleZoomInEvent)
+      window.removeEventListener('pothigpt-zoom-out', handleZoomOutEvent)
+      window.removeEventListener('pothigpt-zoom-reset', handleZoomResetEvent)
+      window.removeEventListener('pothigpt-zoom-change', handleZoomChange as EventListener)
+    }
+  }, [selectedObject, historyStep, history, handleZoomIn, handleZoomOut, handleZoomReset, canvas, onUndoRedoChange])
 
   // Helper function to strip markdown formatting from text
   const stripMarkdown = (text: string): string => {
@@ -1502,53 +1700,16 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     })
   }
 
-  const undo = () => {
-    if (!canvas || historyStep <= 0 || !history || history.length === 0) return
 
-    const newStep = historyStep - 1
-    const previousState = history[newStep]
 
-    if (previousState) {
-      // Temporarily disable history saving during undo to prevent creating new history entry
-      canvas.loadFromJSON(previousState, () => {
-        canvas.renderAll()
-        setHistoryStep(newStep)
-
-        // Update selected object after undo
-        const activeObject = canvas.getActiveObject()
-        setSelectedObject(activeObject || null)
-
-        // Update history step ref for event handlers
-        if (typeof window !== 'undefined' && (window as any).historyStepRef) {
-          (window as any).historyStepRef.current = newStep
-        }
-      })
+  // Expose zoom level via event
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('pothigpt-zoom-change', {
+        detail: { zoomLevel }
+      }))
     }
-  }
-
-  const redo = () => {
-    if (!canvas || historyStep >= history.length - 1 || !history || history.length === 0) return
-
-    const newStep = historyStep + 1
-    const nextState = history[newStep]
-
-    if (nextState) {
-      // Temporarily disable history saving during redo to prevent creating new history entry
-      canvas.loadFromJSON(nextState, () => {
-        canvas.renderAll()
-        setHistoryStep(newStep)
-
-        // Update selected object after redo
-        const activeObject = canvas.getActiveObject()
-        setSelectedObject(activeObject || null)
-
-        // Update history step ref for event handlers
-        if (typeof window !== 'undefined' && (window as any).historyStepRef) {
-          (window as any).historyStepRef.current = newStep
-        }
-      })
-    }
-  }
+  }, [zoomLevel])
 
   // Image upload function
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1607,8 +1768,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           style={{ overflow: 'visible', width: '100%', minWidth: 0 }}
         >
           {/* Left Section - Logo & Page Info */}
-          <Flex align="center" gap="4" style={{ flexShrink: 0, minWidth: 0 }}>
-            <Text size="5" weight="bold" style={{
+          <Flex align="center" gap="2" style={{ flexShrink: 0, minWidth: 0 }} className="hidden sm:flex sm:gap-4">
+            <Text size="3" weight="bold" className="sm:!text-lg md:!text-xl" style={{
               background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -1616,20 +1777,31 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             }}>
               📚 Editor
             </Text>
-            <Separator orientation="vertical" size="2" />
-            <Badge size="2" color="blue" variant="soft" radius="full">
+            <Separator orientation="vertical" size="2" className="hidden md:block" />
+            <Badge size="1" color="blue" variant="soft" radius="full" className="hidden md:block md:!text-xs">
               Page {currentPage + 1} of {pages.length}
             </Badge>
           </Flex>
 
           {/* Center Section - Main Actions */}
-          <Flex align="center" gap="2" style={{ flex: '1 1 auto', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}>
+          <Flex 
+            align="center" 
+            gap={{ initial: '1', sm: '2' }} 
+            wrap="wrap"
+            style={{ flex: '1 1 auto', justifyContent: 'center', minWidth: 0, overflow: 'hidden' }}
+            className="px-1"
+          >
             <Tooltip content="Undo (⌘Z)">
               <IconButton
                 variant="soft"
                 color="gray"
-                size="3"
-                onClick={undo}
+                size="2"
+                className="sm:!w-8 sm:!h-8"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-undo'))
+                  }
+                }}
                 disabled={historyStep <= 0}
                 style={{ cursor: 'pointer' }}
               >
@@ -1641,8 +1813,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               <IconButton
                 variant="soft"
                 color="gray"
-                size="3"
-                onClick={redo}
+                size="2"
+                className="sm:!w-8 sm:!h-8"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('pothigpt-redo'))
+                  }
+                }}
                 disabled={historyStep >= history.length - 1}
                 style={{ cursor: 'pointer' }}
               >
@@ -1650,13 +1827,14 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               </IconButton>
             </Tooltip>
 
-            <Separator orientation="vertical" size="2" mx="2" />
+            <Separator orientation="vertical" size="2" mx="1" className="hidden sm:block sm:!mx-2" />
 
             <Tooltip content="Add Text">
               <IconButton
                 variant="soft"
                 color="blue"
-                size="3"
+                size="2"
+                className="sm:!w-8 sm:!h-8"
                 onClick={addText}
                 style={{ cursor: 'pointer' }}
               >
@@ -1668,7 +1846,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               <IconButton
                 variant="soft"
                 color="green"
-                size="3"
+                size="2"
+                className="sm:!w-8 sm:!h-8"
                 onClick={() => document.getElementById('image-upload')?.click()}
                 style={{ cursor: 'pointer' }}
               >
@@ -1684,8 +1863,167 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               id="image-upload"
             />
 
-            {selectedObject && (
+            {selectedObject && selectedObject.type === 'textbox' && (
               <>
+                <Separator orientation="vertical" size="2" mx="2" />
+                
+                {/* Font Family */}
+                <Select.Root
+                  value={(selectedObject as fabric.Textbox).fontFamily || 'Arial'}
+                  onValueChange={(value) => {
+                    changeFontFamily(value)
+                    setFontFamily(value)
+                  }}
+                >
+                  <Select.Trigger 
+                    size="2" 
+                    variant="soft"
+                    style={{ minWidth: '120px', cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  />
+                  <Select.Content>
+                    <Select.Item value="Arial">Arial</Select.Item>
+                    <Select.Item value="Times New Roman">Times New Roman</Select.Item>
+                    <Select.Item value="Georgia">Georgia</Select.Item>
+                    <Select.Item value="Helvetica">Helvetica</Select.Item>
+                    <Select.Item value="Courier New">Courier New</Select.Item>
+                    <Select.Item value="Verdana">Verdana</Select.Item>
+                    <Select.Item value="Comic Sans MS">Comic Sans MS</Select.Item>
+                  </Select.Content>
+                </Select.Root>
+
+                {/* Font Size */}
+                <Select.Root
+                  value={String((selectedObject as fabric.Textbox).fontSize || 16)}
+                  onValueChange={(value) => {
+                    const size = parseInt(value)
+                    changeFontSize(size)
+                    setFontSize(size)
+                  }}
+                >
+                  <Select.Trigger 
+                    size="2" 
+                    variant="soft"
+                    style={{ minWidth: '70px', cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  />
+                  <Select.Content>
+                    {[8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 96, 120, 144].map(size => (
+                      <Select.Item key={size} value={String(size)}>{size}px</Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Root>
+
+                {/* Text Color */}
+                <Tooltip content="Text Color">
+                  <Box style={{ position: 'relative' }} className="hidden sm:block">
+                    <input
+                      type="color"
+                      value={(selectedObject as fabric.Textbox).fill as string || '#000000'}
+                      onChange={(e) => {
+                        changeTextColor(e.target.value)
+                        setTextColor(e.target.value)
+                      }}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        border: '1px solid #e0e7ff',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        padding: '2px',
+                        backgroundColor: 'transparent'
+                      }}
+                    />
+                  </Box>
+                </Tooltip>
+
+                {/* Text Alignment */}
+                <Separator orientation="vertical" size="2" mx="1" className="hidden sm:block" />
+                <Tooltip content="Align Left">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).textAlign === 'left' ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).textAlign === 'left' ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={() => {
+                      changeTextAlign('left')
+                      setTextAlign('left')
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <Text size="2" weight="bold">L</Text>
+                  </IconButton>
+                </Tooltip>
+                <Tooltip content="Align Center">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).textAlign === 'center' ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).textAlign === 'center' ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={() => {
+                      changeTextAlign('center')
+                      setTextAlign('center')
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <Text size="2" weight="bold">C</Text>
+                  </IconButton>
+                </Tooltip>
+                <Tooltip content="Align Right">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).textAlign === 'right' ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).textAlign === 'right' ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={() => {
+                      changeTextAlign('right')
+                      setTextAlign('right')
+                    }}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <Text size="2" weight="bold">R</Text>
+                  </IconButton>
+                </Tooltip>
+
+                {/* Bold, Italic, Underline */}
+                <Separator orientation="vertical" size="2" mx="1" className="hidden sm:block" />
+                <Tooltip content="Bold (⌘B)">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).fontWeight === 'bold' ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).fontWeight === 'bold' ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={toggleBold}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <FontBoldIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip content="Italic (⌘I)">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).fontStyle === 'italic' ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).fontStyle === 'italic' ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={toggleItalic}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <FontItalicIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip content="Underline (⌘U)">
+                  <IconButton
+                    variant={(selectedObject as fabric.Textbox).underline ? 'solid' : 'soft'}
+                    color={(selectedObject as fabric.Textbox).underline ? 'blue' : 'gray'}
+                    size="2"
+                    onClick={toggleUnderline}
+                    style={{ cursor: 'pointer' }}
+                    className="hidden sm:flex"
+                  >
+                    <UnderlineIcon />
+                  </IconButton>
+                </Tooltip>
+
                 <Separator orientation="vertical" size="2" mx="2" />
                 <Tooltip content="Delete (Del)">
                   <IconButton
@@ -1705,7 +2043,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           {/* Right Section - Save & Export */}
           <Flex
             align="center"
-            gap="2"
+            gap={{ initial: '1', sm: '2' }}
             style={{
               flexShrink: 0,
               flexGrow: 0,
@@ -1724,13 +2062,15 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               onClick={savePage}
               style={{ cursor: 'pointer', flexShrink: 0 }}
               disabled={exporting}
+              className="hidden sm:flex"
             >
               Save
             </RadixButton>
             <RadixButton
               variant="solid"
               color="blue"
-              size="3"
+              size="2"
+              className="sm:!h-8 sm:!px-3"
               onClick={exportToPDF}
               style={{
                 cursor: 'pointer',
@@ -1738,18 +2078,18 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 flexShrink: 0,
-                minWidth: '90px',
-                height: '32px'
+                minWidth: 'fit-content'
               }}
               disabled={exporting}
             >
-              <DownloadIcon width="16" height="16" style={{ marginRight: '6px' }} />
-              PDF
+              <DownloadIcon width="14" height="14" className="sm:!w-4 sm:!h-4" style={{ marginRight: '4px' }} />
+              <Text size="1" className="hidden sm:inline sm:!text-sm">PDF</Text>
             </RadixButton>
             <RadixButton
               variant="solid"
               color="green"
-              size="3"
+              size="2"
+              className="sm:!h-8 sm:!px-3"
               onClick={exportToDOCX}
               style={{
                 cursor: 'pointer',
@@ -1757,13 +2097,12 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 flexShrink: 0,
-                minWidth: '90px',
-                height: '32px'
+                minWidth: 'fit-content'
               }}
               disabled={exporting}
             >
-              <DownloadIcon width="16" height="16" style={{ marginRight: '6px' }} />
-              DOCX
+              <DownloadIcon width="14" height="14" className="sm:!w-4 sm:!h-4" style={{ marginRight: '4px' }} />
+              <Text size="1" className="hidden sm:inline sm:!text-sm">DOCX</Text>
             </RadixButton>
           </Flex>
         </Flex>

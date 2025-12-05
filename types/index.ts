@@ -1,6 +1,6 @@
-import { User, Book, Questionnaire, BookStatus } from '@prisma/client'
+import { User, Book, Questionnaire, BookStatus, AudiobookStatus } from '@prisma/client'
 
-export type { User, Book, Questionnaire, BookStatus }
+export type { User, Book, Questionnaire, BookStatus, AudiobookStatus }
 
 export interface Question {
   id: string

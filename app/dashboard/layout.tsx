@@ -36,6 +36,7 @@ export default function DashboardLayout({
   }, [])
 
   const showDownloadButtons = pathname?.startsWith('/dashboard/books/') && pathname?.endsWith('/edit')
+  const isEditPage = pathname?.startsWith('/dashboard/books/') && pathname?.endsWith('/edit')
 
   const triggerNavbarDownload = (format: 'pdf' | 'docx') => {
     if (typeof window === 'undefined') return
@@ -62,129 +63,115 @@ export default function DashboardLayout({
 
   return (
     <Box className="min-h-screen" style={{ background: '#f8fafc' }}>
-      {/* Header */}
-      <Box 
-        className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b"
-        style={{
-          borderColor: '#e0e7ff',
-          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
-        }}
-      >
-        <Container size="4">
-          <Flex justify="between" align="center" py="3" px={{ initial: '4', md: '0' }}>
-            {/* Logo & Nav */}
-            <Flex align="center" gap="6">
-              <Link href="/dashboard/books" className="no-underline">
-                <Flex align="center" gap="3" className="hover:opacity-80 transition-all">
-                  <Flex
-                    align="center"
-                    justify="center"
-                    className="w-10 h-10 rounded-xl"
-                    style={{
-                      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
-                    }}
-                  >
-                    <ReaderIcon width="22" height="22" color="white" />
+      {/* Header - Hidden on edit page */}
+      {!isEditPage && (
+        <Box 
+          className="sticky top-0 z-50 backdrop-blur-xl bg-white/90 border-b"
+          style={{
+            borderColor: '#e0e7ff',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          <Container size="4">
+            <Flex justify="between" align="center" py="3" px={{ initial: '4', md: '0' }}>
+              {/* Logo & Nav */}
+              <Flex align="center" gap="6">
+                <Link href="/dashboard/books" className="no-underline">
+                  <Flex align="center" gap="3" className="hover:opacity-80 transition-all">
+                    <Flex
+                      align="center"
+                      justify="center"
+                      className="w-10 h-10 rounded-xl"
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)'
+                      }}
+                    >
+                      <ReaderIcon width="22" height="22" color="white" />
+                    </Flex>
+                    <Heading size="6" weight="bold" style={{ color: '#1e293b' }}>
+                      PothiGPT
+                    </Heading>
                   </Flex>
-                  <Heading size="6" weight="bold" style={{ color: '#1e293b' }}>
-                    PothiGPT
-                  </Heading>
-                </Flex>
-              </Link>
-              <Separator orientation="vertical" size="2" className="hidden md:block" style={{ height: '24px' }} />
-              <nav className="hidden md:flex gap-1">
-                <Button
-                  size="3"
-                  variant="soft"
-                  color="blue"
-                  onClick={() => router.push('/dashboard/books')}
-                  className="!cursor-pointer !font-medium"
-                >
-                  My Books
-                </Button>
-              </nav>
-            </Flex>
-
-            {/* User Actions */}
-            <Flex align="center" gap="4" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              {showDownloadButtons && (
-                <Flex align="center" gap="2" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                </Link>
+                <Separator orientation="vertical" size="2" className="hidden md:block" style={{ height: '24px' }} />
+                <nav className="hidden md:flex gap-1">
                   <Button
                     size="3"
+                    variant="soft"
                     color="blue"
-                    variant="solid"
-                    disabled={globalDownloadFormat !== null}
-                    onClick={() => triggerNavbarDownload('pdf')}
-                    className="!cursor-pointer"
+                    onClick={() => router.push('/dashboard/books')}
+                    className="!cursor-pointer !font-medium"
                   >
-                    <Flex align="center" gap="2">
-                      <DownloadIcon width="16" height="16" />
-                      <Text>{globalDownloadFormat === 'pdf' ? 'Downloading...' : 'Download PDF'}</Text>
-                    </Flex>
+                    My Books
                   </Button>
                   <Button
                     size="3"
+                    variant="soft"
                     color="green"
-                    variant="solid"
-                    disabled={globalDownloadFormat !== null}
-                    onClick={() => triggerNavbarDownload('docx')}
-                    className="!cursor-pointer"
+                    onClick={() => router.push('/dashboard/books/upload')}
+                    className="!cursor-pointer !font-medium"
                   >
-                    <Flex align="center" gap="2">
-                      <DownloadIcon width="16" height="16" />
-                      <Text>{globalDownloadFormat === 'docx' ? 'Downloading...' : 'Download DOCX'}</Text>
-                    </Flex>
+                    Upload PDF
                   </Button>
-                </Flex>
-              )}
-
-              {/* User Info with Avatar */}
-              <Flex align="center" gap="3" className="hidden sm:flex">
-                <Avatar
-                  size="2"
-                  fallback={
-                    <PersonIcon width="16" height="16" />
-                  }
-                  radius="full"
-                  color="blue"
-                  variant="soft"
-                />
-                <Flex direction="column" gap="0">
-                  <Text size="2" weight="bold" style={{ color: '#1e293b', lineHeight: '1.2' }}>
-                    {session.user?.name || 'User'}
-                  </Text>
-                  <Text size="1" style={{ color: '#94a3b8', lineHeight: '1.2' }}>
-                    {session.user?.email}
-                  </Text>
-                </Flex>
+                </nav>
               </Flex>
 
-              <Separator orientation="vertical" size="2" className="hidden sm:block" style={{ height: '32px' }} />
-
-              <Button
-                size="3"
-                variant="ghost"
-                color="red"
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="!cursor-pointer !font-medium"
-              >
-                <Flex align="center" gap="2">
-                  <ExitIcon width="16" height="16" />
-                  <Text className="hidden sm:inline">Logout</Text>
+              {/* User Actions */}
+              <Flex align="center" gap="4" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {/* User Info with Avatar */}
+                <Flex align="center" gap="3" className="hidden sm:flex">
+                  <Avatar
+                    size="2"
+                    fallback={
+                      <PersonIcon width="16" height="16" />
+                    }
+                    radius="full"
+                    color="blue"
+                    variant="soft"
+                  />
+                  <Flex direction="column" gap="0">
+                    <Text size="2" weight="bold" style={{ color: '#1e293b', lineHeight: '1.2' }}>
+                      {session.user?.name || 'User'}
+                    </Text>
+                    <Text size="1" style={{ color: '#94a3b8', lineHeight: '1.2' }}>
+                      {session.user?.email}
+                    </Text>
+                  </Flex>
                 </Flex>
-              </Button>
+
+                <Separator orientation="vertical" size="2" className="hidden sm:block" style={{ height: '32px' }} />
+
+                <Button
+                  size="3"
+                  variant="ghost"
+                  color="red"
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="!cursor-pointer !font-medium"
+                >
+                  <Flex align="center" gap="2">
+                    <ExitIcon width="16" height="16" />
+                    <Text className="hidden sm:inline">Logout</Text>
+                  </Flex>
+                </Button>
+              </Flex>
             </Flex>
-          </Flex>
-        </Container>
-      </Box>
+          </Container>
+        </Box>
+      )}
 
       {/* Main Content */}
       <Box asChild>
         <main>
-          <Container size="4" className="py-12">
-            {children}
-          </Container>
+          {isEditPage ? (
+            <Box style={{ padding: 0 }}>
+              {children}
+            </Box>
+          ) : (
+            <Container size="4" className="py-12">
+              {children}
+            </Container>
+          )}
         </main>
       </Box>
     </Box>

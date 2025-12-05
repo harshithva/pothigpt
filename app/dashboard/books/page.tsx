@@ -3,9 +3,11 @@
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Card, Button, Badge, Flex, Heading, Text, TextField, Box, Grid } from '@radix-ui/themes'
-import { PlusIcon, MagnifyingGlassIcon, Pencil1Icon, TrashIcon, ReaderIcon } from '@radix-ui/react-icons'
+import { Card, Button, Badge, Flex, Heading, Text, TextField, Box, Grid, Tabs } from '@radix-ui/themes'
+import { PlusIcon, MagnifyingGlassIcon, Pencil1Icon, TrashIcon, ReaderIcon, UploadIcon, SpeakerLoudIcon } from '@radix-ui/react-icons'
 import { Book } from '@/types'
+
+type TabValue = 'ebooks' | 'audiobooks'
 
 export default function BooksPage() {
   const { data: session } = useSession()
@@ -13,6 +15,7 @@ export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState<TabValue>('ebooks')
 
   useEffect(() => {
     fetchBooks()
@@ -42,9 +45,20 @@ export default function BooksPage() {
     }
   }
 
-  const filteredBooks = Array.isArray(books) ? books.filter(book =>
-    book.title.toLowerCase().includes(searchQuery.toLowerCase())
-  ) : []
+  // Filter books based on active tab
+  const filteredBooks = Array.isArray(books) ? books.filter(book => {
+    const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase())
+    if (activeTab === 'audiobooks') {
+      // Show books that have audiobook status (any status except null)
+      return matchesSearch && book.audiobookStatus !== null
+    } else {
+      // Show all books (ebooks tab)
+      return matchesSearch
+    }
+  }) : []
+
+  const ebooksCount = books.filter(book => book.audiobookStatus === null || book.audiobookStatus === undefined).length
+  const audiobooksCount = books.filter(book => book.audiobookStatus !== null && book.audiobookStatus !== undefined).length
 
   if (loading) {
     return (
@@ -67,6 +81,20 @@ export default function BooksPage() {
           </Text>
         </Box>
 
+        <Flex gap="3" wrap="wrap">
+          <Button 
+            size="4"
+            variant="solid" 
+            color="green" 
+            highContrast
+            onClick={() => router.push('/dashboard/books/upload')}
+            className="!cursor-pointer"
+          >
+            <Flex align="center" gap="2">
+              <UploadIcon width="18" height="18" />
+              <Text>Upload PDF</Text>
+            </Flex>
+          </Button>
         <Button 
           size="4"
           variant="solid" 
@@ -81,12 +109,41 @@ export default function BooksPage() {
           </Flex>
         </Button>
       </Flex>
+      </Flex>
 
+      {/* Tabs */}
+      <Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
+        <Tabs.List size="3" style={{ width: '100%', maxWidth: '600px' }}>
+          <Tabs.Trigger value="ebooks" style={{ flex: 1 }}>
+            <Flex align="center" gap="2">
+              <ReaderIcon width="16" height="16" />
+              <Text>Ebooks</Text>
+              {ebooksCount > 0 && (
+                <Badge size="1" variant="soft" color="blue">
+                  {ebooksCount}
+                </Badge>
+              )}
+            </Flex>
+          </Tabs.Trigger>
+          <Tabs.Trigger value="audiobooks" style={{ flex: 1 }}>
+            <Flex align="center" gap="2">
+              <SpeakerLoudIcon width="16" height="16" />
+              <Text>Audiobooks</Text>
+              {audiobooksCount > 0 && (
+                <Badge size="1" variant="soft" color="green">
+                  {audiobooksCount}
+                </Badge>
+              )}
+            </Flex>
+          </Tabs.Trigger>
+        </Tabs.List>
+
+        <Box mt="6">
       {/* Search */}
-      <Box className="w-full md:w-96">
+          <Box className="w-full md:w-96 mb-6">
         <TextField.Root
           size="3"
-          placeholder="Search books..."
+              placeholder={`Search ${activeTab === 'audiobooks' ? 'audiobooks' : 'ebooks'}...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           variant="surface"
@@ -112,12 +169,36 @@ export default function BooksPage() {
           <Flex direction="column" align="center" gap="6">
             <ReaderIcon width="64" height="64" color="#94a3b8" />
             <Heading size="6" weight="bold" style={{ color: '#1e293b' }}>
-              {searchQuery ? 'No books found' : 'No books yet'}
+              {searchQuery 
+                ? `No ${activeTab === 'audiobooks' ? 'audiobooks' : 'ebooks'} found` 
+                : activeTab === 'audiobooks' 
+                  ? 'No audiobooks yet' 
+                  : 'No books yet'}
             </Heading>
             <Text size="4" style={{ color: '#64748b' }}>
-              {searchQuery ? 'Try a different search term' : 'Create your first ebook to get started'}
+              {searchQuery 
+                ? 'Try a different search term' 
+                : activeTab === 'audiobooks'
+                  ? 'Upload a PDF and generate an audiobook to get started'
+                  : 'Create your first ebook to get started'}
             </Text>
             {!searchQuery && (
+              <Flex gap="3" wrap="wrap" justify="center">
+                {activeTab === 'audiobooks' ? (
+                  <Button 
+                    size="4"
+                    variant="solid" 
+                    color="green" 
+                    highContrast
+                    onClick={() => router.push('/dashboard/books/upload')}
+                    className="!cursor-pointer"
+                  >
+                    <Flex align="center" gap="2">
+                      <UploadIcon width="18" height="18" />
+                      <Text>Upload PDF for Audiobook</Text>
+                    </Flex>
+                  </Button>
+                ) : (
               <Button 
                 size="4"
                 variant="solid" 
@@ -131,6 +212,8 @@ export default function BooksPage() {
                   <Text>Create Your First Book</Text>
                 </Flex>
               </Button>
+                )}
+              </Flex>
             )}
           </Flex>
         </Card>
@@ -200,10 +283,23 @@ export default function BooksPage() {
                     {book.title}
                   </Heading>
 
-                  <Flex align="center" gap="2">
+                  <Flex direction="column" gap="2">
                     <Text size="2" style={{ color: '#94a3b8' }}>
                       Created {new Date(book.createdAt).toLocaleDateString()}
                     </Text>
+                    {book.audiobookStatus && (
+                      <Badge 
+                        color={
+                          book.audiobookStatus === 'COMPLETED' ? 'green' :
+                          book.audiobookStatus === 'PROCESSING' ? 'yellow' :
+                          book.audiobookStatus === 'FAILED' ? 'red' : 'gray'
+                        }
+                        variant="soft"
+                        size="1"
+                      >
+                        Audiobook: {book.audiobookStatus}
+                      </Badge>
+                    )}
                   </Flex>
                 </Flex>
 
@@ -243,6 +339,8 @@ export default function BooksPage() {
           ))}
         </Grid>
       )}
+        </Box>
+      </Tabs.Root>
     </Flex>
   )
 }
