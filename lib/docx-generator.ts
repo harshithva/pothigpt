@@ -8,12 +8,118 @@ import type { GeneratedBookContent } from '@/lib/book-generators/types'
 function extractTextFromCanvas(canvasData: any): Paragraph[] {
   const paragraphs: Paragraph[] = []
 
-  if (!canvasData || !canvasData.objects) {
+  // Handle different data formats
+  let parsedData = canvasData
+  
+  // Check if data is a string (needs JSON.parse)
+  if (typeof canvasData === 'string') {
+    try {
+      parsedData = JSON.parse(canvasData)
+    } catch (e) {
+      console.warn('[DOCX] Failed to parse canvas data as JSON:', e)
+      return paragraphs
+    }
+  }
+
+  if (!parsedData) {
+    console.warn('[DOCX] No canvas data provided')
     return paragraphs
   }
 
-  // Group objects by approximate vertical position to form paragraphs
-  const objects = canvasData.objects || []
+  // Extract objects from different possible locations in Fabric.js JSON structure
+  let objects: any[] = []
+  
+  if (Array.isArray(parsedData)) {
+    // If data is directly an array of objects
+    objects = parsedData
+  } else if (parsedData.objects && Array.isArray(parsedData.objects)) {
+    // Standard Fabric.js structure: { objects: [...] }
+    objects = parsedData.objects
+  } else if (parsedData.canvas && parsedData.canvas.objects) {
+    // Nested structure: { canvas: { objects: [...] } }
+    objects = parsedData.canvas.objects
+  } else {
+    console.warn('[DOCX] Could not find objects array in canvas data:', Object.keys(parsedData))
+    return paragraphs
+  }
+
+  if (objects.length === 0) {
+    console.warn('[DOCX] No objects found in canvas data')
+    console.log('[DOCX] Canvas data structure:', JSON.stringify(parsedData, null, 2).substring(0, 500))
+    return paragraphs
+  }
+
+  console.log(`[DOCX] Found ${objects.length} objects in canvas data`)
+  console.log('[DOCX] Object types:', objects.map((o: any) => o.type || 'unknown').join(', '))
+
+  // Helper function to extract text from an object (handles different Fabric.js text types)
+  const extractTextFromObject = (obj: any): string => {
+    // Try to extract text from any object that might have text
+    // First, check for direct text property (most common)
+    if (obj.text && typeof obj.text === 'string' && obj.text.trim()) {
+      return obj.text
+    }
+    
+    // Handle IText with char array
+    if (obj.chars && Array.isArray(obj.chars)) {
+      const charText = obj.chars.map((char: any) => {
+        if (typeof char === 'string') return char
+        if (char && typeof char === 'object') {
+          return char.char || char.text || ''
+        }
+        return ''
+      }).join('')
+      if (charText.trim()) return charText
+    }
+    
+    // Handle textLines array
+    if (obj.textLines && Array.isArray(obj.textLines)) {
+      const linesText = obj.textLines.join('\n')
+      if (linesText.trim()) return linesText
+    }
+    
+    // Handle different text object types more broadly
+    if (obj.type === 'textbox' || obj.type === 'text' || obj.type === 'i-text' || obj.type === 'IText' || obj.type === 'textbox' || obj.type?.toLowerCase().includes('text')) {
+      // Try all possible text properties
+      if (obj.text) return String(obj.text)
+      if (obj.content) return String(obj.content)
+      if (obj.value) return String(obj.value)
+    }
+    
+    // Handle grouped objects
+    if (obj.type === 'group' && obj.objects && Array.isArray(obj.objects)) {
+      const groupText = obj.objects.map(extractTextFromObject).filter(Boolean).join(' ')
+      if (groupText.trim()) return groupText
+    }
+    
+    return ''
+  }
+
+  // Helper function to convert color to hex (without #)
+  const colorToHex = (color: any): string => {
+    if (!color) return '000000'
+    
+    if (typeof color === 'string') {
+      // Remove # if present
+      if (color.startsWith('#')) {
+        return color.substring(1)
+      }
+      // Handle rgb(r, g, b) format
+      if (color.startsWith('rgb')) {
+        const match = color.match(/\d+/g)
+        if (match && match.length >= 3) {
+          const r = parseInt(match[0]).toString(16).padStart(2, '0')
+          const g = parseInt(match[1]).toString(16).padStart(2, '0')
+          const b = parseInt(match[2]).toString(16).padStart(2, '0')
+          return r + g + b
+        }
+      }
+      // Assume it's already hex without #
+      return color.length === 6 ? color : '000000'
+    }
+    
+    return '000000'
+  }
 
   // Sort objects by vertical position first, then horizontal for proper reading order
   const sortedObjects = [...objects].sort((a: any, b: any) => {
@@ -31,62 +137,113 @@ function extractTextFromCanvas(canvasData: any): Paragraph[] {
 
   // Process each text object
   for (const obj of sortedObjects) {
-    if (obj.type === 'textbox' || obj.type === 'text' || obj.type === 'i-text') {
-      const text = obj.text || ''
-      if (!text.trim()) continue
-
-      // Extract formatting properties
-      const runs: TextRun[] = []
-
-      // Handle multi-line text
-      const lines = text.split('\n')
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i]
-        if (line.trim()) {
-          runs.push(
-            new TextRun({
-              text: line,
-              bold: obj.fontWeight === 'bold' || obj.fontWeight === 700,
-              italics: obj.fontStyle === 'italic',
-              size: Math.round((obj.fontSize || 12) * 2), // Convert to half-points (docx uses half-points)
-              font: obj.fontFamily || 'Calibri',
-              color: obj.fill ? (typeof obj.fill === 'string' ? obj.fill.replace('#', '') : '000000') : '000000',
-            })
-          )
-        }
-
-        // Add line break except for last line
-        if (i < lines.length - 1 && line.trim()) {
-          runs.push(new TextRun({ text: '\n', break: 1 }))
-        }
+    // Skip only definitely non-text objects
+    if (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'image' || obj.type === 'path' || obj.type === 'line') {
+      continue
+    }
+    
+    // Log first few objects for debugging
+    if (sortedObjects.indexOf(obj) < 5) {
+      console.log(`[DOCX] Processing object ${sortedObjects.indexOf(obj) + 1}: type=${obj.type}, hasText=${!!obj.text}, hasChars=${!!obj.chars}, hasTextLines=${!!obj.textLines}, keys=${Object.keys(obj).join(', ')}`)
+    }
+    
+    // Skip page numbers (very small font at very bottom) and other metadata
+    if (obj.fontSize && obj.fontSize <= 12 && obj.top && obj.top > 800) {
+      // Likely a page number
+      continue
+    }
+    
+    // Skip objects that are clearly just page metadata (like "Page X of Y")
+    if (obj.text && typeof obj.text === 'string') {
+      const textLower = obj.text.toLowerCase().trim()
+      if (textLower.match(/^(page\s*\d+|p\.\s*\d+|\d+)$/) || (textLower.includes('page') && textLower.match(/\d+/))) {
+        // Likely a page number or page indicator
+        continue
       }
+    }
 
-      if (runs.length > 0) {
-        // Determine alignment
-        let alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT
-        if (obj.textAlign === 'center') {
-          alignment = AlignmentType.CENTER
-        } else if (obj.textAlign === 'right') {
-          alignment = AlignmentType.RIGHT
-        } else if (obj.textAlign === 'justify') {
-          alignment = AlignmentType.JUSTIFIED
-        }
+    const text = extractTextFromObject(obj)
+    
+    if (text && text.trim() && sortedObjects.indexOf(obj) < 5) {
+      console.log(`[DOCX] Extracted text from ${obj.type}: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`)
+    }
+    
+    if (!text || !text.trim()) {
+      // Don't log warning for every object, only if we have very few objects total
+      if (sortedObjects.length < 10) {
+        console.warn(`[DOCX] No text extracted from object type ${obj.type}`)
+      }
+      continue
+    }
 
-        paragraphs.push(
-          new Paragraph({
-            children: runs,
-            alignment: alignment,
-            spacing: {
-              after: 200, // 10pt spacing after paragraph
-            },
+    // Extract formatting properties
+    const runs: TextRun[] = []
+
+    // Handle multi-line text
+    const lines = text.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      if (line.trim()) {
+        const fontSize = obj.fontSize || 12
+        const fontWeight = obj.fontWeight || 'normal'
+        const fontStyle = obj.fontStyle || 'normal'
+        const fontFamily = obj.fontFamily || 'Calibri'
+        const fill = obj.fill || '#000000'
+        
+        runs.push(
+          new TextRun({
+            text: line,
+            bold: fontWeight === 'bold' || fontWeight === 700 || fontWeight === '700',
+            italics: fontStyle === 'italic',
+            size: Math.round(fontSize * 2), // Convert to half-points (docx uses half-points)
+            font: fontFamily,
+            color: colorToHex(fill),
           })
         )
       }
+
+      // Add line break except for last line
+      if (i < lines.length - 1 && line.trim()) {
+        runs.push(new TextRun({ text: '\n', break: 1 }))
+      }
+    }
+
+    if (runs.length > 0) {
+      // Default to left alignment (only use justify/center/right if explicitly set)
+      let alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT
+      
+      // Only apply non-left alignment if explicitly set and not justify
+      // For DOCX generation, we default to left for better readability
+      if (obj.textAlign === 'center') {
+        alignment = AlignmentType.CENTER
+      } else if (obj.textAlign === 'right') {
+        alignment = AlignmentType.RIGHT
+      } else if (obj.textAlign === 'justify' && obj.textAlign !== undefined) {
+        // Only use justify if explicitly set, otherwise default to left
+        alignment = AlignmentType.JUSTIFIED
+      }
+      // Default is already LEFT, so no else needed
+
+      // Determine spacing based on font size (headings get more space)
+      const fontSize = obj.fontSize || 12
+      const isHeading = fontSize >= 24 || (obj.fontWeight && (obj.fontWeight === 'bold' || obj.fontWeight === 700))
+      
+      paragraphs.push(
+        new Paragraph({
+          children: runs,
+          alignment: alignment,
+          spacing: {
+            before: isHeading ? 240 : 0, // 12pt before headings
+            after: isHeading ? 240 : 120, // 12pt after headings, 6pt after body text
+          },
+        })
+      )
     }
   }
 
-  // If no text was found, add a placeholder
+  // If no text was found, add a placeholder to prevent completely blank pages
   if (paragraphs.length === 0) {
+    console.warn('[DOCX] No text extracted from canvas, adding placeholder')
     paragraphs.push(
       new Paragraph({
         children: [
@@ -114,30 +271,54 @@ export async function generateDOCX(pages: any[], bookTitle: string, content?: Ge
   // Otherwise, use canvas-based extraction (existing behavior)
   const children: Paragraph[] = []
 
-  // Add title page
-  children.push(
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: bookTitle,
-          bold: true,
-          size: 56, // 28pt - larger like PDF
-          font: 'Calibri',
-        }),
-      ],
-      alignment: AlignmentType.CENTER,
-      spacing: {
-        after: 400,
-      },
-    })
-  )
+  // Only add title page if it's not already in the pages
+  const hasTitlePage = pages.some(p => p.name && (p.name.toLowerCase().includes('title') || p.name === 'Title Page'))
+  
+  if (!hasTitlePage) {
+    // Add title page
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: bookTitle,
+            bold: true,
+            size: 56, // 28pt - larger like PDF
+            font: 'Calibri',
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          after: 400,
+        },
+      })
+    )
+    
+    // Add page break after title
+    children.push(
+      new Paragraph({
+        children: [new PageBreak()],
+      })
+    )
+  }
 
   // Process each page
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]
 
+    if (!page) {
+      console.warn(`[DOCX] Page ${i} is undefined, skipping`)
+      continue
+    }
+
+    // Skip title page, author page, and copyright pages - they're already handled
+    const pageName = page.name?.toLowerCase() || ''
+    if (pageName.includes('title') || pageName.includes('author') || pageName.includes('copyright')) {
+      console.log(`[DOCX] Skipping front matter page: ${page.name}`)
+      continue
+    }
+
     // Add page break before each page (except the first)
-    if (i > 0) {
+    if (i > 0 && children.length > 0) {
       children.push(
         new Paragraph({
           children: [new PageBreak()],
@@ -145,31 +326,32 @@ export async function generateDOCX(pages: any[], bookTitle: string, content?: Ge
       )
     }
 
-    // Add page title/name if available
-    if (page.name && page.name !== 'Title Page') {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: page.name,
-              bold: true,
-              size: 40, // 20pt - larger like PDF
-              font: 'Calibri',
-            }),
-          ],
-          spacing: {
-            before: 200,
-            after: 200,
-          },
-        })
-      )
-    }
+    // Don't add page names - they're just metadata, not content
+    // Skip adding page titles to avoid cluttering the document
 
     // Extract and add content from canvas
     if (page.data) {
+      console.log(`[DOCX] Processing page ${i + 1}: ${page.name || 'Unnamed'}`)
       const pageParagraphs = extractTextFromCanvas(page.data)
-      children.push(...pageParagraphs)
+      
+      if (pageParagraphs.length > 0) {
+        children.push(...pageParagraphs)
+        console.log(`[DOCX] Extracted ${pageParagraphs.length} paragraphs from page ${i + 1}`)
+      } else {
+        console.warn(`[DOCX] No paragraphs extracted from page ${i + 1}, adding placeholder`)
+        // Empty page placeholder
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: ' ',
+              }),
+            ],
+          })
+        )
+      }
     } else {
+      console.warn(`[DOCX] Page ${i + 1} has no data, adding placeholder`)
       // Empty page placeholder
       children.push(
         new Paragraph({
