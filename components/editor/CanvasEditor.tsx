@@ -405,7 +405,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     }
   }, [currentPage, canvas, isInitialized, pages])
 
-  // Zoom functions - defined early to avoid initialization errors
+  // Zoom functions - zoom the canvas content itself
   const handleZoomIn = useCallback(() => {
     if (!canvas) return
     setZoomLevel(prev => {
@@ -951,7 +951,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
           })
           const canvas = currentPageCanvas as fabric.Canvas
           canvas.add(titleText)
-          yPosition += titleText.height! + 40
+          yPosition += titleText.height! + 32 // Optimized spacing after section title
         }
       }
 
@@ -970,10 +970,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             paragraph.trim(),
             contentWidth,
             14,
-            1.8
+            1.65 // Optimized line height for better page fill
           )
 
-          const paragraphSpacing = 20
+          const paragraphSpacing = 16
           const requiredHeight = textHeight + paragraphSpacing
 
           if (yPosition + requiredHeight > maxContentHeight) {
@@ -987,7 +987,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               width: contentWidth,
               fontSize: 14,
               fill: '#333333',
-              lineHeight: 1.8,
+              lineHeight: 1.65,
+              textAlign: 'justify',
             })
             const canvas = currentPageCanvas as fabric.Canvas
             canvas.add(text)
@@ -1135,7 +1136,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             })
             const canvas = currentPageCanvas as fabric.Canvas
             canvas.add(chapterTitle)
-            yPosition += chapterTitle.height! + 40 // More space after title
+            yPosition += chapterTitle.height! + 32 // Optimized spacing after title
             isFirstPageOfChapter = false
           }
         }
@@ -1152,10 +1153,10 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             paragraph.trim(),
             contentWidth,
             14, // fontSize
-            1.8 // lineHeight
+            1.65 // lineHeight - optimized for better page fill
           )
 
-          const paragraphSpacing = 20
+          const paragraphSpacing = 16
           const requiredHeight = textHeight + paragraphSpacing
 
           // Check if we need a new page
@@ -1172,7 +1173,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               width: contentWidth,
               fontSize: 14,
               fill: '#333333',
-              lineHeight: 1.8,
+              lineHeight: 1.65,
+              textAlign: 'justify',
             })
             const canvas = currentPageCanvas as fabric.Canvas
             canvas.add(text)
@@ -1268,12 +1270,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             width: contentWidth,
             fontSize: 16,
             fill: '#333333',
-            lineHeight: 1.8,
+            lineHeight: 1.65,
+            textAlign: 'justify',
           })
           const introHeight = intro.height || 100
           if (yPosition + introHeight <= maxContentHeight) {
             fabricCanvas.add(intro)
-            yPosition += introHeight + 25
+            yPosition += introHeight + 18
           }
         }
 
@@ -1288,7 +1291,8 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               width: contentWidth,
               fontSize: 14,
               fill: '#333333',
-              lineHeight: 1.8,
+              lineHeight: 1.65,
+              textAlign: 'justify',
             })
 
             const textHeight = text.height || 100
@@ -1297,7 +1301,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             }
 
             fabricCanvas.add(text)
-            yPosition += textHeight + 20
+            yPosition += textHeight + 16
           }
         }
 
@@ -1876,7 +1880,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                   }}
                 >
                   <Select.Trigger 
-                    size="2" 
                     variant="soft"
                     style={{ minWidth: '120px', cursor: 'pointer' }}
                     className="hidden sm:flex"
@@ -1902,7 +1905,6 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                   }}
                 >
                   <Select.Trigger 
-                    size="2" 
                     variant="soft"
                     style={{ minWidth: '70px', cursor: 'pointer' }}
                     className="hidden sm:flex"
@@ -2554,9 +2556,13 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.12)',
               border: '1px solid rgba(226, 232, 240, 0.8)',
               borderRadius: '12px',
-              overflow: 'hidden',
+              overflow: 'auto',
               background: '#ffffff',
-              position: 'relative'
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: '600px'
             }}
           >
             <canvas

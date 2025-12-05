@@ -100,7 +100,7 @@ export default function BooksPage() {
 
       {/* Tabs */}
       <Tabs.Root value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
-        <Tabs.List size="3" style={{ width: '100%', maxWidth: '600px' }}>
+        <Tabs.List size="2" style={{ width: '100%', maxWidth: '600px' }}>
           <Tabs.Trigger value="ebooks" style={{ flex: 1 }}>
             <Flex align="center" gap="2">
               <ReaderIcon width="16" height="16" />

@@ -468,7 +468,7 @@ export default function EditBookPage() {
                   opacity: canRedo ? 1 : 0.5,
                   transition: 'all 0.2s ease'
                 }}
-              >
+        >
                 <MixIcon width="16" height="16" />
               </IconButton>
             </Tooltip>
@@ -574,7 +574,7 @@ export default function EditBookPage() {
                   updateTextFormat('fontFamily', value)
                 }}
               >
-                <Select.Trigger size="2" variant="soft" style={{ minWidth: '100px' }} />
+                <Select.Trigger variant="soft" style={{ minWidth: '100px' }} />
                 <Select.Content>
                   <Select.Item value="Arial">Arial</Select.Item>
                   <Select.Item value="Times New Roman">Times New Roman</Select.Item>
@@ -824,50 +824,51 @@ export default function EditBookPage() {
         </Box>
       )}
 
-      {/* Chapter Generation Progress Banner */}
+      {/* Chapter Generation Progress Banner - Small corner widget */}
       {generatingChapters && currentGeneratingChapter && (
         <Box 
-          className="mb-2 sm:mb-3 mx-2 sm:mx-4 md:mx-6 max-w-4xl mx-auto"
           style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
             background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
             border: '1px solid #3b82f6',
             borderRadius: '8px',
-            padding: '0.5rem 0.75rem'
+            padding: '0.5rem 0.75rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000,
+            maxWidth: '280px',
+            minWidth: '200px'
           }}
         >
-          <Flex direction="column" gap="2">
+          <Flex direction="column" gap="1.5">
             <Flex 
-              direction={{ initial: 'column', sm: 'row' }}
               justify="between" 
-              align={{ initial: 'start', sm: 'center' }}
+              align="center" 
               gap="2"
             >
-              <Flex align="center" gap="2">
-                <div className="animate-spin" style={{ width: '14px', height: '14px', border: '2px solid #3b82f6', borderTop: '2px solid transparent', borderRadius: '50%' }} />
-                <Text size={{ initial: '2', sm: '3' }} weight="bold" className="text-xs sm:text-sm" style={{ color: '#1e40af' }}>
-                  Generating Chapter {currentGeneratingChapter}
+              <Flex align="center" gap="1.5">
+                <div className="animate-spin" style={{ width: '12px', height: '12px', border: '2px solid #3b82f6', borderTop: '2px solid transparent', borderRadius: '50%' }} />
+                <Text size="1" weight="bold" className="text-xs" style={{ color: '#1e40af' }}>
+                  Ch {currentGeneratingChapter}
                 </Text>
               </Flex>
-              <Flex align="center" gap="2">
-                <Badge size="1" color="blue" variant="soft" className="text-xs">
-                AI Writing
-              </Badge>
-                <Button
-                  size="1"
-                  variant="ghost"
-                  color="red"
-                  onClick={handleCancelGeneration}
-                  className="!cursor-pointer"
-                >
-                  <Cross2Icon width="12" height="12" />
-                </Button>
-              </Flex>
+              <Button
+                size="1"
+                variant="ghost"
+                color="red"
+                onClick={handleCancelGeneration}
+                className="!cursor-pointer"
+                style={{ 
+                  padding: '2px 6px',
+                  minWidth: 'auto'
+                }}
+              >
+                <Cross2Icon width="10" height="10" />
+              </Button>
             </Flex>
-            <Text size="1" className="text-xs hidden sm:block" style={{ color: '#1e40af' }}>
-              The AI is progressively creating each chapter with context from previous chapters. This may take a minute per chapter.
-            </Text>
-            {/* Chapter status indicators */}
-            <Flex gap="1" wrap="wrap">
+            {/* Chapter status indicators - compact */}
+            <Flex gap="0.5" wrap="wrap">
               {(book.content as any)?.outline?.chapters?.map((ch: any) => (
                 <Badge 
                   key={ch.number}
@@ -878,9 +879,9 @@ export default function EditBookPage() {
                     chapterProgress[ch.number] === 'error' ? 'red' : 'gray'
                   }
                   variant={chapterProgress[ch.number] === 'generating' ? 'solid' : 'soft'}
-                  className="text-xs"
+                  style={{ fontSize: '10px', padding: '2px 6px' }}
                 >
-                  Ch {ch.number}: {
+                  {ch.number}: {
                     chapterProgress[ch.number] === 'completed' ? '✓' :
                     chapterProgress[ch.number] === 'generating' ? '⋯' :
                     chapterProgress[ch.number] === 'error' ? '✗' : '○'
