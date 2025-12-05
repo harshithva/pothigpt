@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, Button, Badge, Flex, Heading, Text, TextField, Box, Grid, Tabs } from '@radix-ui/themes'
-import { PlusIcon, MagnifyingGlassIcon, Pencil1Icon, TrashIcon, ReaderIcon, UploadIcon, SpeakerLoudIcon } from '@radix-ui/react-icons'
+import { PlusIcon, MagnifyingGlassIcon, Pencil1Icon, TrashIcon, ReaderIcon, SpeakerLoudIcon } from '@radix-ui/react-icons'
 import { Book } from '@/types'
 
 type TabValue = 'ebooks' | 'audiobooks'
@@ -85,30 +85,17 @@ export default function BooksPage() {
           <Button 
             size="4"
             variant="solid" 
-            color="green" 
+            color="blue" 
             highContrast
-            onClick={() => router.push('/dashboard/books/upload')}
-            className="!cursor-pointer"
+            onClick={() => router.push('/dashboard/books/create')}
+            className="!cursor-pointer shadow-glow-blue"
           >
             <Flex align="center" gap="2">
-              <UploadIcon width="18" height="18" />
-              <Text>Upload PDF</Text>
+              <PlusIcon width="18" height="18" />
+              <Text>Create New Book</Text>
             </Flex>
           </Button>
-        <Button 
-          size="4"
-          variant="solid" 
-          color="blue" 
-          highContrast
-          onClick={() => router.push('/dashboard/books/create')}
-          className="!cursor-pointer shadow-glow-blue"
-        >
-          <Flex align="center" gap="2">
-            <PlusIcon width="18" height="18" />
-            <Text>Create New Book</Text>
-          </Flex>
-        </Button>
-      </Flex>
+        </Flex>
       </Flex>
 
       {/* Tabs */}
@@ -179,40 +166,24 @@ export default function BooksPage() {
               {searchQuery 
                 ? 'Try a different search term' 
                 : activeTab === 'audiobooks'
-                  ? 'Upload a PDF and generate an audiobook to get started'
+                  ? 'No audiobooks available yet'
                   : 'Create your first ebook to get started'}
             </Text>
-            {!searchQuery && (
+            {!searchQuery && activeTab === 'ebooks' && (
               <Flex gap="3" wrap="wrap" justify="center">
-                {activeTab === 'audiobooks' ? (
-                  <Button 
-                    size="4"
-                    variant="solid" 
-                    color="green" 
-                    highContrast
-                    onClick={() => router.push('/dashboard/books/upload')}
-                    className="!cursor-pointer"
-                  >
-                    <Flex align="center" gap="2">
-                      <UploadIcon width="18" height="18" />
-                      <Text>Upload PDF for Audiobook</Text>
-                    </Flex>
-                  </Button>
-                ) : (
-              <Button 
-                size="4"
-                variant="solid" 
-                color="blue" 
-                highContrast
-                onClick={() => router.push('/dashboard/books/create')}
-                className="!cursor-pointer shadow-glow-blue"
-              >
-                <Flex align="center" gap="2">
-                  <PlusIcon width="18" height="18" />
-                  <Text>Create Your First Book</Text>
-                </Flex>
-              </Button>
-                )}
+                <Button 
+                  size="4"
+                  variant="solid" 
+                  color="blue" 
+                  highContrast
+                  onClick={() => router.push('/dashboard/books/create')}
+                  className="!cursor-pointer shadow-glow-blue"
+                >
+                  <Flex align="center" gap="2">
+                    <PlusIcon width="18" height="18" />
+                    <Text>Create Your First Book</Text>
+                  </Flex>
+                </Button>
               </Flex>
             )}
           </Flex>

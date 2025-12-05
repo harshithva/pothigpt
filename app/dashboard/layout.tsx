@@ -105,15 +105,6 @@ export default function DashboardLayout({
                   >
                     My Books
                   </Button>
-                  <Button
-                    size="3"
-                    variant="soft"
-                    color="green"
-                    onClick={() => router.push('/dashboard/books/upload')}
-                    className="!cursor-pointer !font-medium"
-                  >
-                    Upload PDF
-                  </Button>
                 </nav>
               </Flex>
 
